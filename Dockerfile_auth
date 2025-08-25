@@ -9,8 +9,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 WORKDIR /app
 
 # Pythonの依存関係をインストール（認証用ライブラリ追加）
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+COPY requirements_auth.txt .
+RUN pip install --no-cache-dir -r requirements_auth.txt
 
 # アプリケーションをコピー
 COPY app/ .
