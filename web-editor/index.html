@@ -152,13 +152,135 @@
             font-size: 1.2em;
             opacity: 0.9;
         }
+
+        /* 左右分割レイアウト */
+        .split-container {
+            display: flex;
+            gap: 20px;
+            height: calc(100vh - 200px);
+            min-height: 600px;
+        }
+
+        .left-panel {
+            flex: 3;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .right-panel {
+            flex: 2;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
         
         .editor-container {
             background: white;
             border-radius: 15px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.2);
             overflow: hidden;
-            margin-bottom: 20px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .ai-container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            overflow: hidden;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .ai-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 20px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .ai-content {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            background: #f8f9fa;
+        }
+
+        .ai-input-section {
+            border-bottom: 1px solid #e9ecef;
+            padding-bottom: 15px;
+            margin-bottom: 15px;
+        }
+
+        .ai-output-section {
+            flex: 1;
+            min-height: 200px;
+        }
+
+        .ai-prompt-input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 14px;
+            margin-bottom: 10px;
+            transition: border-color 0.3s ease;
+        }
+
+        .ai-prompt-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .ai-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .ai-btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            font-size: 13px;
+        }
+
+        .ai-btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .ai-btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .ai-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .ai-output {
+            background: white;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 15px;
+            min-height: 150px;
+            max-height: 400px;
+            overflow-y: auto;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            white-space: pre-wrap;
         }
         
         .toolbar {
@@ -168,6 +290,7 @@
             display: flex;
             gap: 10px;
             align-items: center;
+            flex-wrap: wrap;
         }
         
         .btn {
@@ -200,11 +323,11 @@
         }
         
         .editor-wrapper {
-            height: 400px;
+            flex: 1;
             border: 1px solid #e9ecef;
         }
         
-        .input-panel, .ai-panel {
+        .input-panel {
             border-bottom: 1px solid #e9ecef;
             animation: slideDown 0.3s ease-out;
         }
@@ -243,6 +366,22 @@
             min-height: 150px;
             white-space: pre-wrap;
             border-radius: 0 0 15px 15px;
+        }
+
+        /* レスポンシブ対応 */
+        @media (max-width: 1024px) {
+            .split-container {
+                flex-direction: column;
+                height: auto;
+            }
+            
+            .left-panel, .right-panel {
+                flex: none;
+            }
+            
+            .ai-container {
+                min-height: 400px;
+            }
         }
         
         .loading {
@@ -372,7 +511,7 @@
                 このサービスは認証されたユーザーのみがアクセス可能です。<br>
                 不正アクセスや攻撃を防ぐため、承認制となっています。
                 <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #bee5eb; font-size: 0.8em; color: #0c5460;">
-                    <strong>🚀 Version 2.1.0</strong> - AI支援・scanf対応版<br>
+                    <strong>🚀 Version 2.2.0</strong> - 左右分割・AI専用パネル版<br>
                     <span style="font-size: 0.75em;">最終更新: 2025年8月26日</span>
                 </div>
             </div>
@@ -390,83 +529,103 @@
                     <button onclick="logout()" style="float: right; background: #dc3545; color: white; border: none; padding: 5px 15px; border-radius: 5px; cursor: pointer; font-size: 0.8em;">🚪 ログアウト</button>
                 </div>
             </div>
-        
-        <div class="editor-container">
-            <div class="toolbar">
-                <button class="btn btn-primary" onclick="runCode()">
-                    ▶️ 実行する
-                </button>
-                <button class="btn btn-secondary" onclick="clearEditor()">
-                    🗑️ クリア
-                </button>
-                <button class="btn" style="background: #28a745; color: white;" onclick="toggleInputPanel()">
-                    📝 入力設定
-                </button>
-                <button class="btn" style="background: #17a2b8; color: white;" onclick="toggleAIPanel()">
-                    🤖 AI支援
-                </button>
-                <span style="margin-left: auto; color: #666;">
-                    💡 Ctrl+Enter でも実行できます
-                </span>
-            </div>
-            
-            <!-- 入力設定パネル -->
-            <div id="inputPanel" class="input-panel hidden">
-                <div style="padding: 15px; background: #e8f5e8; border-bottom: 1px solid #c3e6c3;">
-                    <strong>📝 scanf用入力値設定</strong>
-                    <p style="margin: 5px 0; font-size: 0.9em; color: #666;">
-                        scanfを含むプログラムの実行時に自動で入力される値を設定してください（改行区切り）
-                    </p>
-                    <textarea id="inputValues" placeholder="例：&#10;10&#10;20&#10;Hello" 
-                             style="width: 100%; height: 80px; margin-top: 10px; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-family: monospace;"></textarea>
-                </div>
-            </div>
-            
-            <!-- AI支援パネル -->
-            <div id="aiPanel" class="ai-panel hidden">
-                <div style="padding: 15px; background: #e8f4f8; border-bottom: 1px solid #b8daef;">
-                    <strong>🤖 AI コーディング支援</strong>
-                    <p style="margin: 5px 0; font-size: 0.9em; color: #666;">
-                        JCLコードの生成・修正・説明をAIに依頼できます
-                    </p>
-                    <div style="display: flex; gap: 10px; margin-top: 10px;">
-                        <input type="text" id="aiPrompt" placeholder="例：数値を2つ入力して足し算するプログラムを作って" 
-                               style="flex: 1; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
-                        <button onclick="generateCode()" class="btn btn-primary" style="padding: 8px 15px;">
-                            ✨ 生成
-                        </button>
+
+            <!-- 左右分割レイアウト -->
+            <div class="split-container">
+                <!-- 左パネル: エディタとコード実行 -->
+                <div class="left-panel">
+                    <div class="editor-container">
+                        <div class="toolbar">
+                            <button class="btn btn-primary" onclick="runCode()">
+                                ▶️ 実行する
+                            </button>
+                            <button class="btn btn-secondary" onclick="clearEditor()">
+                                🗑️ クリア
+                            </button>
+                            <button class="btn" style="background: #28a745; color: white;" onclick="toggleInputPanel()">
+                                📝 入力設定
+                            </button>
+                            <span style="margin-left: auto; color: #666; font-size: 0.9em;">
+                                💡 Ctrl+Enter でも実行できます
+                            </span>
+                        </div>
+                        
+                        <!-- 入力設定パネル -->
+                        <div id="inputPanel" class="input-panel hidden">
+                            <div style="padding: 15px; background: #e8f5e8; border-bottom: 1px solid #c3e6c3;">
+                                <strong>📝 scanf用入力値設定</strong>
+                                <p style="margin: 5px 0; font-size: 0.9em; color: #666;">
+                                    scanfを含むプログラムの実行時に自動で入力される値を設定してください（改行区切り）
+                                </p>
+                                <textarea id="inputValues" placeholder="例：&#10;10&#10;20&#10;Hello" 
+                                         style="width: 100%; height: 80px; margin-top: 10px; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-family: monospace;"></textarea>
+                            </div>
+                        </div>
+                        
+                        <div class="editor-wrapper" id="editor"></div>
                     </div>
-                    <div style="margin-top: 10px;">
-                        <button onclick="explainCode()" class="btn btn-secondary" style="padding: 6px 12px; font-size: 0.9em;">
-                            💡 現在のコードを説明
-                        </button>
-                        <button onclick="optimizeCode()" class="btn btn-secondary" style="padding: 6px 12px; font-size: 0.9em;">
-                            ⚡ コード改善
-                        </button>
+                    
+                    <div class="output-container">
+                        <div class="output-header">
+                            📋 実行結果
+                        </div>
+                        <div class="output-content" id="output">
+                            ここに実行結果が表示されます。
+                            まずは上のエディタでJCLコードを書いて「実行する」ボタンを押してみてください！
+                        </div>
                     </div>
                 </div>
+
+                <!-- 右パネル: AI支援エリア -->
+                <div class="right-panel">
+                    <div class="ai-container">
+                        <div class="ai-header">
+                            🤖 AI コーディング支援
+                            <span style="font-size: 0.8em; opacity: 0.8; margin-left: auto;">powered by ChatGPT</span>
+                        </div>
+                        <div class="ai-content">
+                            <div class="ai-input-section">
+                                <input type="text" id="aiPrompt" class="ai-prompt-input" 
+                                       placeholder="例：数値を2つ入力して足し算するプログラムを作って">
+                                <div class="ai-buttons">
+                                    <button onclick="generateCode()" class="ai-btn ai-btn-primary">
+                                        ✨ コード生成
+                                    </button>
+                                    <button onclick="explainCode()" class="ai-btn ai-btn-secondary">
+                                        💡 コード説明
+                                    </button>
+                                    <button onclick="optimizeCode()" class="ai-btn ai-btn-secondary">
+                                        ⚡ コード改善
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="ai-output-section">
+                                <div id="aiOutput" class="ai-output">
+                                    🤖 こんにちは！JCLコーディングのお手伝いをします。
+                                    
+                                    💡 使い方：
+                                    • 上の入力欄にやりたいことを書いてください
+                                    • 「コード生成」でJCLコードを自動作成
+                                    • 「コード説明」で現在のコードを解説
+                                    • 「コード改善」でより良いコードを提案
+                                    
+                                    例：「1から10まで足し算するプログラム」
+                                    　　「ユーザーから数値を入力して判定する」
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="samples" style="background: rgba(255,255,255,0.95); border-radius: 15px; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1);">
+                        <h3 style="color: #333; margin-bottom: 15px;">📚 サンプルコード</h3>
+                        <button class="sample-btn" onclick="loadSample('hello')">Hello World</button>
+                        <button class="sample-btn" onclick="loadSample('greeting')">あいさつ</button>
+                        <button class="sample-btn" onclick="loadSample('calculation')">計算</button>
+                        <button class="sample-btn" onclick="loadSample('input')">入力（scanf）</button>
+                        <button class="sample-btn" onclick="loadSample('loop')">繰り返し</button>
+                    </div>
+                </div>
             </div>
-            
-            <div class="editor-wrapper" id="editor"></div>
-        </div>
-        
-        <div class="output-container">
-            <div class="output-header">
-                📋 実行結果
-            </div>
-            <div class="output-content" id="output">
-                ここに実行結果が表示されます。
-                まずは上のエディタでJCLコードを書いて「実行する」ボタンを押してみてください！
-            </div>
-        </div>
-        
-        <div class="samples">
-            <h3>📚 サンプルコード</h3>
-            <button class="sample-btn" onclick="loadSample('hello')">Hello World</button>
-            <button class="sample-btn" onclick="loadSample('greeting')">あいさつ</button>
-            <button class="sample-btn" onclick="loadSample('calculation')">計算</button>
-            <button class="sample-btn" onclick="loadSample('input')">入力（scanf）</button>
-            <button class="sample-btn" onclick="loadSample('loop')">繰り返し</button>
         </div>
     </div>
 
@@ -748,22 +907,16 @@
             panel.classList.toggle('hidden');
         }
         
-        // AIパネル表示切り替え
-        function toggleAIPanel() {
-            const panel = document.getElementById('aiPanel');
-            panel.classList.toggle('hidden');
-        }
-        
         // AIコード生成
         async function generateCode() {
             const prompt = document.getElementById('aiPrompt').value;
             if (!prompt.trim()) {
-                alert('プロンプトを入力してください。');
+                document.getElementById('aiOutput').innerHTML = '❌ プロンプトを入力してください。';
                 return;
             }
             
-            const outputDiv = document.getElementById('output');
-            outputDiv.innerHTML = '🤖 AIがコードを生成中...';
+            const aiOutput = document.getElementById('aiOutput');
+            aiOutput.innerHTML = '🤖 AIがコードを生成中です...\n\n⏳ しばらくお待ちください。';
             
             try {
                 const token = localStorage.getItem('jcl_auth_token');
@@ -782,17 +935,22 @@
                     const result = await response.json();
                     if (result.ok && result.code) {
                         editor.setValue(result.code);
-                        outputDiv.innerHTML = `✨ AIがコードを生成しました！\n\n${result.code}`;
+                        aiOutput.innerHTML = `✨ コードを生成しました！エディタに挿入済みです。\n\n📝 生成されたコード:\n${result.code}\n\n💡 「実行する」ボタンで動作確認してみてください！`;
                         document.getElementById('aiPrompt').value = '';
                     } else {
-                        outputDiv.innerHTML = `❌ エラー: ${result.error || '生成に失敗しました'}`;
+                        const errorMsg = result.error || '生成に失敗しました';
+                        if (errorMsg.includes('insufficient_quota')) {
+                            aiOutput.innerHTML = `⚠️ OpenAI APIの使用量制限に達しています。\n\n🔧 解決方法：\n• OpenAI APIキーの使用量制限を確認\n• 別のAPIキーを使用\n• しばらく時間をおいて再試行\n\n💡 現在はサンプルコードをご活用ください！`;
+                        } else {
+                            aiOutput.innerHTML = `❌ エラー: ${errorMsg}`;
+                        }
                     }
                 } else {
                     const error = await response.json();
-                    outputDiv.innerHTML = `❌ エラー: ${error.error || 'AI機能の呼び出しに失敗しました'}`;
+                    aiOutput.innerHTML = `❌ エラー: ${error.error || 'AI機能の呼び出しに失敗しました'}`;
                 }
             } catch (error) {
-                outputDiv.innerHTML = `❌ AI接続エラー: ${error.message}`;
+                aiOutput.innerHTML = `❌ 通信エラー: ${error.message}\n\n🔄 インターネット接続を確認して再試行してください。`;
             }
         }
         
@@ -800,12 +958,12 @@
         async function explainCode() {
             const code = editor.getValue();
             if (!code.trim()) {
-                alert('説明するコードがありません。');
+                document.getElementById('aiOutput').innerHTML = '❌ 説明するコードがありません。まずコードを書いてください。';
                 return;
             }
             
-            const outputDiv = document.getElementById('output');
-            outputDiv.innerHTML = '🤖 AIがコードを分析中...';
+            const aiOutput = document.getElementById('aiOutput');
+            aiOutput.innerHTML = '🤖 AIがコードを分析中です...\n\n🔍 コードの動作を詳しく解説します。';
             
             try {
                 const token = localStorage.getItem('jcl_auth_token');
@@ -823,16 +981,21 @@
                 if (response.ok) {
                     const result = await response.json();
                     if (result.ok && result.explanation) {
-                        outputDiv.innerHTML = `💡 コード説明:\n\n${result.explanation}`;
+                        aiOutput.innerHTML = `💡 コード解説:\n\n${result.explanation}`;
                     } else {
-                        outputDiv.innerHTML = `❌ エラー: ${result.error || '説明の生成に失敗しました'}`;
+                        const errorMsg = result.error || '説明の生成に失敗しました';
+                        if (errorMsg.includes('insufficient_quota')) {
+                            aiOutput.innerHTML = `⚠️ OpenAI APIの使用量制限に達しています。\n\n💡 手動での解説：\nこのコードは主関数()から始まるJCLプログラムです。\n実行して動作を確認してみてください！`;
+                        } else {
+                            aiOutput.innerHTML = `❌ エラー: ${errorMsg}`;
+                        }
                     }
                 } else {
                     const error = await response.json();
-                    outputDiv.innerHTML = `❌ エラー: ${error.error || 'AI機能の呼び出しに失敗しました'}`;
+                    aiOutput.innerHTML = `❌ エラー: ${error.error || 'AI機能の呼び出しに失敗しました'}`;
                 }
             } catch (error) {
-                outputDiv.innerHTML = `❌ AI接続エラー: ${error.message}`;
+                aiOutput.innerHTML = `❌ 通信エラー: ${error.message}`;
             }
         }
         
@@ -840,12 +1003,12 @@
         async function optimizeCode() {
             const code = editor.getValue();
             if (!code.trim()) {
-                alert('改善するコードがありません。');
+                document.getElementById('aiOutput').innerHTML = '❌ 改善するコードがありません。まずコードを書いてください。';
                 return;
             }
             
-            const outputDiv = document.getElementById('output');
-            outputDiv.innerHTML = '🤖 AIがコードを改善中...';
+            const aiOutput = document.getElementById('aiOutput');
+            aiOutput.innerHTML = '🤖 AIがコードを改善中です...\n\n⚡ より良いコードを提案します。';
             
             try {
                 const token = localStorage.getItem('jcl_auth_token');
@@ -863,16 +1026,21 @@
                 if (response.ok) {
                     const result = await response.json();
                     if (result.ok && result.optimization) {
-                        outputDiv.innerHTML = `⚡ コード改善提案:\n\n${result.optimization}`;
+                        aiOutput.innerHTML = `⚡ コード改善提案:\n\n${result.optimization}`;
                     } else {
-                        outputDiv.innerHTML = `❌ エラー: ${result.error || '改善提案の生成に失敗しました'}`;
+                        const errorMsg = result.error || '改善提案の生成に失敗しました';
+                        if (errorMsg.includes('insufficient_quota')) {
+                            aiOutput.innerHTML = `⚠️ OpenAI APIの使用量制限に達しています。\n\n💡 手動でのアドバイス：\n• 変数名をわかりやすくする\n• コメントを追加する\n• 処理を関数に分ける\nなど試してみてください！`;
+                        } else {
+                            aiOutput.innerHTML = `❌ エラー: ${errorMsg}`;
+                        }
                     }
                 } else {
                     const error = await response.json();
-                    outputDiv.innerHTML = `❌ エラー: ${error.error || 'AI機能の呼び出しに失敗しました'}`;
+                    aiOutput.innerHTML = `❌ エラー: ${error.error || 'AI機能の呼び出しに失敗しました'}`;
                 }
             } catch (error) {
-                outputDiv.innerHTML = `❌ AI接続エラー: ${error.message}`;
+                aiOutput.innerHTML = `❌ 通信エラー: ${error.message}`;
             }
         }
         
@@ -947,12 +1115,6 @@
                     console.error('入力値の読み込みエラー:', e);
                 }
             }
-        }
-
-        // AIパネルの表示/非表示
-        function toggleAIPanel() {
-            const panel = document.getElementById('aiPanel');
-            panel.classList.toggle('show');
         }
 
         // 実行時にscanf対応 - テキストエリアから入力値を取得
