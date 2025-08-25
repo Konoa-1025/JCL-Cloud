@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>JCL Cloud - v2.3.0 | プロフェッショナルJCL開発環境</title>
+        <title>JCL Cloud - v2.4.0 | プロフェッショナルJCL開発環境</title>
     <style>
         * {
             margin: 0;
@@ -162,14 +162,14 @@
         }
 
         .left-panel {
-            flex: 3;
+            flex: 1;
             display: flex;
             flex-direction: column;
             gap: 20px;
         }
 
         .right-panel {
-            flex: 2;
+            flex: 1;
             display: flex;
             flex-direction: column;
             gap: 15px;
@@ -513,8 +513,16 @@
                 このサービスは認証されたユーザーのみがアクセス可能です。<br>
                 不正アクセスや攻撃を防ぐため、承認制となっています。
                 <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #bee5eb; font-size: 0.8em; color: #0c5460;">
-                    <strong>🚀 Version 2.2.0</strong> - 左右分割・AI専用パネル版<br>
+                    <strong>🚀 Version 2.4.0</strong> - 田んぼレイアウト・JCLエンジンリンク版<br>
                     <span style="font-size: 0.75em;">最終更新: 2025年8月26日</span>
+                </div>
+                <div style="margin-top: 15px; text-align: center;">
+                    <a href="https://github.com/Konoa-1025/JCL-Engine" target="_blank" 
+                       style="display: inline-block; background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%); color: white; text-decoration: none; padding: 8px 16px; border-radius: 20px; font-weight: bold; font-size: 0.9em; box-shadow: 0 2px 8px rgba(255, 107, 107, 0.3); transition: all 0.3s ease;"
+                       onmouseover="this.style.background='linear-gradient(135deg, #ff5252 0%, #d63031 100%)'; this.style.transform='translateY(-2px)'"
+                       onmouseout="this.style.background='linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%)'; this.style.transform='translateY(0)'">
+                        JapaneseCLanguageについてもっと知る👈
+                    </a>
                 </div>
             </div>
         </div>
@@ -524,7 +532,15 @@
     <div id="mainScreen" class="main-container">
         <div class="container">
             <div class="header">
-                <h1>🌸 JCL オンラインエディタ</h1>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <h1 style="margin: 0;">🌸 JCL オンラインエディタ</h1>
+                    <a href="https://github.com/Konoa-1025/JCL-Engine" target="_blank" 
+                       style="background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%); color: white; text-decoration: none; padding: 8px 16px; border-radius: 20px; font-weight: bold; font-size: 0.9em; box-shadow: 0 2px 8px rgba(255, 107, 107, 0.3); transition: all 0.3s ease;"
+                       onmouseover="this.style.background='linear-gradient(135deg, #ff5252 0%, #d63031 100%)'; this.style.transform='translateY(-2px)'"
+                       onmouseout="this.style.background='linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%)'; this.style.transform='translateY(0)'">
+                        JapaneseCLanguageについてもっと知る👈
+                    </a>
+                </div>
                 <p>日本語でプログラミングしよう！ブラウザでJCLコードを実行できます</p>
                 <div style="margin-top: 15px; background: rgba(255,255,255,0.2); padding: 10px; border-radius: 10px; font-size: 0.9em;">
                     👤 ログイン中: <span id="userEmail" style="font-weight: bold;">確認中...</span>
@@ -625,22 +641,6 @@
                         <button class="sample-btn" onclick="loadSample('calculation')" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; padding: 10px 16px; margin: 6px 4px; border-radius: 25px; cursor: pointer; transition: all 0.3s ease; font-weight: 500; font-size: 14px; box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);">計算</button>
                         <button class="sample-btn" onclick="loadSample('input')" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; padding: 10px 16px; margin: 6px 4px; border-radius: 25px; cursor: pointer; transition: all 0.3s ease; font-weight: 500; font-size: 14px; box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);">入力（scanf）</button>
                         <button class="sample-btn" onclick="loadSample('loop')" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; padding: 10px 16px; margin: 6px 4px; border-radius: 25px; cursor: pointer; transition: all 0.3s ease; font-weight: 500; font-size: 14px; box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);">繰り返し</button>
-                    </div>
-
-                    <!-- JCL宣伝セクション -->
-                    <div class="jcl-promo" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); border-radius: 15px; padding: 20px; margin-top: 15px; text-align: center; color: white; box-shadow: 0 10px 30px rgba(0,0,0,0.1); flex-shrink: 0;">
-                        <h4 style="margin-bottom: 10px; font-size: 1.2em;">🚀 JCL Cloud について</h4>
-                        <p style="font-size: 0.9em; opacity: 0.9; line-height: 1.5; margin-bottom: 10px;">
-                            プロフェッショナルなC開発環境をクラウドで！<br>
-                            VS Code拡張機能として、デスクトップでも利用可能
-                        </p>
-                        <a href="https://marketplace.visualstudio.com/items?itemName=JCL.jcl-lang" 
-                           target="_blank" 
-                           style="display: inline-block; background: rgba(255,255,255,0.2); color: white; text-decoration: none; padding: 8px 16px; border-radius: 20px; margin-top: 5px; transition: background 0.3s ease; font-weight: bold;"
-                           onmouseover="this.style.background='rgba(255,255,255,0.3)'"
-                           onmouseout="this.style.background='rgba(255,255,255,0.2)'">
-                            📥 VS Code拡張機能をダウンロード
-                        </a>
                     </div>
                 </div>
             </div>
