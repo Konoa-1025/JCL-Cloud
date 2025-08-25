@@ -495,19 +495,18 @@
         }
         
         function initializeEditor() {
-        
-        // サンプルコード
-        const samples = {
-            hello: `主関数() {
+            // サンプルコード
+            const samples = {
+                hello: `主関数() {
     表示("Hello, World!改行");
     戻る 0;
 }`,
-            greeting: `主関数() {
+                greeting: `主関数() {
     表示("こんにちは、JCLの世界へようこそ！改行");
     表示("今日も素晴らしい一日ですね！改行");
     戻る 0;
 }`,
-            calculation: `主関数() {
+                calculation: `主関数() {
     整数型 a = 10;
     整数型 b = 20;
     整数型 合計 = a + b;
@@ -515,7 +514,7 @@
     表示("計算結果: 整数改行", 合計);
     戻る 0;
 }`,
-            loop: `主関数() {
+                loop: `主関数() {
     整数型 i;
     
     繰り返し(i = 1; i <= 5; i++) {
@@ -525,28 +524,32 @@
     表示("完了！改行");
     戻る 0;
 }`
-        };
-        
-        // Monaco Editor初期化
-        require.config({ paths: { 'vs': 'https://unpkg.com/monaco-editor@0.45.0/min/vs' }});
-        require(['vs/editor/editor.main'], function () {
-            editor = monaco.editor.create(document.getElementById('editor'), {
-                value: samples.hello,
-                language: 'c',
-                theme: 'vs-dark',
-                fontSize: 16,
-                lineNumbers: 'on',
-                roundedSelection: false,
-                scrollBeyondLastLine: false,
-                readOnly: false,
-                automaticLayout: true
+            };
+            
+            // Monaco Editor初期化
+            require.config({ paths: { 'vs': 'https://unpkg.com/monaco-editor@0.45.0/min/vs' }});
+            require(['vs/editor/editor.main'], function () {
+                editor = monaco.editor.create(document.getElementById('editor'), {
+                    value: samples.hello,
+                    language: 'c',
+                    theme: 'vs-dark',
+                    fontSize: 16,
+                    lineNumbers: 'on',
+                    roundedSelection: false,
+                    scrollBeyondLastLine: false,
+                    readOnly: false,
+                    automaticLayout: true
+                });
+                
+                // Ctrl+Enter で実行
+                editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, function() {
+                    runCode();
+                });
             });
             
-            // Ctrl+Enter で実行
-            editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, function() {
-                runCode();
-            });
-        });
+            // グローバルに samples を設定（loadSample関数で使用するため）
+            window.samples = samples;
+        }
         
         // コード実行（認証付き）
         async function runCode() {
@@ -597,35 +600,22 @@
             }
         }
         
-        // ログアウト機能
-        function logout() {
-            localStorage.removeItem('jcl_auth_token');
-            showAuthScreen();
-            
-            // エディタをリセット
-            if (editor) {
-                editor.setValue('');
-            }
-            document.getElementById('output').innerHTML = 'ログアウトしました。';
-        }
-        
         // エディタクリア
         function clearEditor() {
-            editor.setValue('');
-            document.getElementById('output').innerHTML = 'エディタをクリアしました。新しいコードを書いてみてください！';
+            if (editor) {
+                editor.setValue('');
+                document.getElementById('output').innerHTML = 'エディタをクリアしました。新しいコードを書いてみてください！';
+            }
         }
         
         // サンプル読み込み
         function loadSample(sampleName) {
-            if (samples[sampleName]) {
-                editor.setValue(samples[sampleName]);
+            if (window.samples && window.samples[sampleName] && editor) {
+                editor.setValue(window.samples[sampleName]);
                 document.getElementById('output').innerHTML = `📝 "${sampleName}" サンプルを読み込みました。「実行する」ボタンを押してみてください！`;
             }
         }
     </script>
-    
-    <!-- Monaco Editor -->
-    <script src="https://unpkg.com/monaco-editor@0.45.0/min/vs/loader.js"></script>
         </div>  <!-- container終了 -->
     </div>  <!-- mainScreen終了 -->
 </body>
