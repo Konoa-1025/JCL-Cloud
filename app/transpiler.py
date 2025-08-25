@@ -30,7 +30,7 @@ KEYWORDS = {
     "繰り返し": "for",
     "続行": "continue",
     "抜ける": "break",
-    "主関数": "int main()", # main関数にintの戻り値と()を追加
+    "主関数": "int main", # main関数にintの戻り値を追加（括弧は後で処理）
     "時刻型": "time_t", # 時刻を扱う型
     "整数型": "int",
     "実数型": "double", # 実数型はdoubleにマッピング（高精度を推奨）
@@ -143,9 +143,19 @@ def transpile_jc_to_c(jc_text: str) -> str:
                               "文字列", "実数", "文字", "整数", "改行" # フォーマット指定子など
                              ]:
                 continue
-            # 変数名と重ならないようにキーワードは単語境界なしでreplace
-            # ただし、現状のキーワードは単語なのでこれでOK
-            processed_line_after_keyword_replace = processed_line_after_keyword_replace.replace(jp_keyword, c_equivalent)
+            
+            # 主関数の特別処理: 主関数() → int main() (括弧の重複を防ぐ)
+            if jp_keyword == "主関数":
+                # 主関数() の場合
+                if "主関数()" in processed_line_after_keyword_replace:
+                    processed_line_after_keyword_replace = processed_line_after_keyword_replace.replace("主関数()", "int main()")
+                # 主関数 の場合（括弧なし）
+                elif "主関数" in processed_line_after_keyword_replace:
+                    processed_line_after_keyword_replace = processed_line_after_keyword_replace.replace("主関数", "int main")
+            else:
+                # 変数名と重ならないようにキーワードは単語境界なしでreplace
+                # ただし、現状のキーワードは単語なのでこれでOK
+                processed_line_after_keyword_replace = processed_line_after_keyword_replace.replace(jp_keyword, c_equivalent)
         
         # Step 3: 特定の関数引数の型キャストを処理 (例: strlenの出力)
         processed_line_after_func_cast = re.sub(r"strlen\((.*?)\)", r"(int)strlen(\1)", processed_line_after_keyword_replace)
