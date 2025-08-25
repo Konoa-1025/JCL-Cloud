@@ -2,11 +2,13 @@ from fastapi import FastAPI, HTTPException, Depends, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
+from typing import List, Optional
 import subprocess, tempfile, os, textwrap, shutil
 import jwt
 import hashlib
 from datetime import datetime, timedelta
 import os
+from openai import OpenAI
 
 # JCLトランスパイラをインポート
 from transpiler import transpile_jc_to_c
@@ -37,6 +39,11 @@ class LoginRequest(BaseModel):
 
 class RunReq(BaseModel):
     code: str
+    input_data: Optional[List[str]] = None
+
+class AIRequest(BaseModel):
+    prompt: str
+    code: Optional[str] = None
 
 def create_access_token(data: dict, expires_delta: timedelta = None):
     to_encode = data.copy()
@@ -103,7 +110,7 @@ int main() {{
 
 @app.post("/run")
 def run(req: RunReq, current_user: str = Depends(verify_token)):
-    """認証が必要なJCL実行エンドポイント"""
+    """認証が必要なJCL実行エンドポイント（scanf対応）"""
     work = tempfile.mkdtemp(prefix="jcl_")
     try:
         c_path = os.path.join(work, "out.c")
@@ -127,8 +134,16 @@ def run(req: RunReq, current_user: str = Depends(verify_token)):
                 "user": current_user
             }
 
-        # 実行（2秒タイムアウト）
-        r2 = subprocess.run([exe_path], capture_output=True, text=True, timeout=2)
+        # 実行（scanf対応）
+        stdin_input = None
+        if req.input_data:
+            stdin_input = "\n".join(req.input_data) + "\n"
+        
+        r2 = subprocess.run([exe_path], 
+                          capture_output=True, 
+                          text=True, 
+                          timeout=2,
+                          input=stdin_input)
         return {
             "ok": r2.returncode == 0, 
             "stage": "run", 
@@ -150,3 +165,134 @@ def health_check():
 @app.get("/status")
 def auth_status(current_user: str = Depends(verify_token)):
     return {"message": "認証済み", "user": current_user, "status": "authenticated"}
+
+# AI機能エンドポイント
+@app.post("/ai/generate")
+def ai_generate(req: AIRequest, current_user: str = Depends(verify_token)):
+    """AIコード生成エンドポイント"""
+    try:
+        # OpenAI APIキーの設定（環境変数から取得）
+        api_key = os.getenv("OPENAI_API_KEY")
+        
+        if not api_key:
+            return {"ok": False, "error": "OpenAI API key not configured"}
+        
+        client = OpenAI(api_key=api_key)
+        
+        system_prompt = """あなたはJCL（Japanese Coding Language）のエキスパートです。
+JCLの文法規則:
+- 主関数() { ... } でプログラムを開始
+- 表示("テキスト改行") で出力
+- 整数型、文字列型 で変数宣言
+- 入力("整数", &変数) でscanf相当
+- 繰り返し(初期化; 条件; 更新) { ... } でfor文
+- もし(条件) { ... } でif文
+- 戻る 値; でreturn文
+
+ユーザーの要求に基づいてJCLコードを生成してください。"""
+
+        response = client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": req.prompt}
+            ],
+            max_tokens=500,
+            temperature=0.7
+        )
+        
+        generated_code = response.choices[0].message.content
+        
+        return {
+            "ok": True,
+            "code": generated_code,
+            "user": current_user
+        }
+        
+    except Exception as e:
+        return {"ok": False, "error": f"AI生成エラー: {str(e)}"}
+
+@app.post("/ai/explain")
+def ai_explain(req: AIRequest, current_user: str = Depends(verify_token)):
+    """AIコード解説エンドポイント"""
+    try:
+        api_key = os.getenv("OPENAI_API_KEY")
+        
+        if not api_key:
+            return {"ok": False, "error": "OpenAI API key not configured"}
+        
+        if not req.code:
+            return {"ok": False, "error": "解説するコードが指定されていません"}
+        
+        client = OpenAI(api_key=api_key)
+        
+        system_prompt = """あなたはJCL（Japanese Coding Language）のエキスパートです。
+提供されたJCLコードを日本語で分かりやすく解説してください。
+- 各行の動作を説明
+- 変数の役割を説明
+- プログラム全体の流れを説明
+- 初心者にも理解しやすいように丁寧に解説"""
+
+        response = client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": f"以下のJCLコードを解説してください:\n\n{req.code}"}
+            ],
+            max_tokens=800,
+            temperature=0.3
+        )
+        
+        explanation = response.choices[0].message.content
+        
+        return {
+            "ok": True,
+            "explanation": explanation,
+            "user": current_user
+        }
+        
+    except Exception as e:
+        return {"ok": False, "error": f"AI解説エラー: {str(e)}"}
+
+@app.post("/ai/optimize")
+def ai_optimize(req: AIRequest, current_user: str = Depends(verify_token)):
+    """AIコード最適化エンドポイント"""
+    try:
+        api_key = os.getenv("OPENAI_API_KEY")
+        
+        if not api_key:
+            return {"ok": False, "error": "OpenAI API key not configured"}
+        
+        if not req.code:
+            return {"ok": False, "error": "最適化するコードが指定されていません"}
+        
+        client = OpenAI(api_key=api_key)
+        
+        system_prompt = """あなたはJCL（Japanese Coding Language）のエキスパートです。
+提供されたJCLコードを最適化し、改善提案を行ってください。
+- より効率的なアルゴリズム
+- より読みやすいコード構造
+- パフォーマンス改善
+- ベストプラクティスの適用
+最適化されたコードと改善点の説明を提供してください。"""
+
+        response = client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": f"以下のJCLコードを最適化してください:\n\n{req.code}"}
+            ],
+            max_tokens=800,
+            temperature=0.3
+        )
+        
+        optimization = response.choices[0].message.content
+        
+        return {
+            "ok": True,
+            "optimization": optimization,
+            "user": current_user
+        }
+        
+    except Exception as e:
+        return {"ok": False, "error": f"AI最適化エラー: {str(e)}"}
