@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🌸 JCL Cloud - 日本語プログラミング環境</title>
+        <title>JCL Cloud - v2.3.0 | プロフェッショナルJCL開発環境</title>
     <style>
         * {
             margin: 0;
@@ -172,7 +172,8 @@
             flex: 2;
             display: flex;
             flex-direction: column;
-            gap: 20px;
+            gap: 15px;
+            height: 100%;
         }
         
         .editor-container {
@@ -193,6 +194,7 @@
             flex: 1;
             display: flex;
             flex-direction: column;
+            min-height: 300px;
         }
 
         .ai-header {
@@ -616,13 +618,29 @@
                         </div>
                     </div>
 
-                    <div class="samples" style="background: rgba(255,255,255,0.95); border-radius: 15px; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1);">
+                    <div class="samples" style="background: rgba(255,255,255,0.95); border-radius: 15px; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); flex-shrink: 0;">
                         <h3 style="color: #333; margin-bottom: 15px;">📚 サンプルコード</h3>
-                        <button class="sample-btn" onclick="loadSample('hello')">Hello World</button>
-                        <button class="sample-btn" onclick="loadSample('greeting')">あいさつ</button>
-                        <button class="sample-btn" onclick="loadSample('calculation')">計算</button>
-                        <button class="sample-btn" onclick="loadSample('input')">入力（scanf）</button>
-                        <button class="sample-btn" onclick="loadSample('loop')">繰り返し</button>
+                        <button class="sample-btn" onclick="loadSample('hello')" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; padding: 10px 16px; margin: 6px 4px; border-radius: 25px; cursor: pointer; transition: all 0.3s ease; font-weight: 500; font-size: 14px; box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);">Hello World</button>
+                        <button class="sample-btn" onclick="loadSample('greeting')" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; padding: 10px 16px; margin: 6px 4px; border-radius: 25px; cursor: pointer; transition: all 0.3s ease; font-weight: 500; font-size: 14px; box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);">あいさつ</button>
+                        <button class="sample-btn" onclick="loadSample('calculation')" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; padding: 10px 16px; margin: 6px 4px; border-radius: 25px; cursor: pointer; transition: all 0.3s ease; font-weight: 500; font-size: 14px; box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);">計算</button>
+                        <button class="sample-btn" onclick="loadSample('input')" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; padding: 10px 16px; margin: 6px 4px; border-radius: 25px; cursor: pointer; transition: all 0.3s ease; font-weight: 500; font-size: 14px; box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);">入力（scanf）</button>
+                        <button class="sample-btn" onclick="loadSample('loop')" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; padding: 10px 16px; margin: 6px 4px; border-radius: 25px; cursor: pointer; transition: all 0.3s ease; font-weight: 500; font-size: 14px; box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);">繰り返し</button>
+                    </div>
+
+                    <!-- JCL宣伝セクション -->
+                    <div class="jcl-promo" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); border-radius: 15px; padding: 20px; margin-top: 15px; text-align: center; color: white; box-shadow: 0 10px 30px rgba(0,0,0,0.1); flex-shrink: 0;">
+                        <h4 style="margin-bottom: 10px; font-size: 1.2em;">🚀 JCL Cloud について</h4>
+                        <p style="font-size: 0.9em; opacity: 0.9; line-height: 1.5; margin-bottom: 10px;">
+                            プロフェッショナルなC開発環境をクラウドで！<br>
+                            VS Code拡張機能として、デスクトップでも利用可能
+                        </p>
+                        <a href="https://marketplace.visualstudio.com/items?itemName=JCL.jcl-lang" 
+                           target="_blank" 
+                           style="display: inline-block; background: rgba(255,255,255,0.2); color: white; text-decoration: none; padding: 8px 16px; border-radius: 20px; margin-top: 5px; transition: background 0.3s ease; font-weight: bold;"
+                           onmouseover="this.style.background='rgba(255,255,255,0.3)'"
+                           onmouseout="this.style.background='rgba(255,255,255,0.2)'">
+                            📥 VS Code拡張機能をダウンロード
+                        </a>
                     </div>
                 </div>
             </div>

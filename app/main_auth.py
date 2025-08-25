@@ -171,11 +171,16 @@ def auth_status(current_user: str = Depends(verify_token)):
 def ai_generate(req: AIRequest, current_user: str = Depends(verify_token)):
     """AIコード生成エンドポイント"""
     try:
+        print(f"🤖 AI Generate Request from user: {current_user}, prompt: {req.prompt}")
+        
         # OpenAI APIキーの設定（環境変数から取得）
         api_key = os.getenv("OPENAI_API_KEY")
         
         if not api_key:
+            print("❌ OpenAI API key not configured")
             return {"ok": False, "error": "OpenAI API key not configured"}
+        
+        print(f"🔑 Using OpenAI API key: {api_key[:10]}...")
         
         client = OpenAI(api_key=api_key)
         
@@ -191,6 +196,8 @@ JCLの文法規則:
 
 ユーザーの要求に基づいてJCLコードを生成してください。"""
 
+        print("📡 Sending request to OpenAI API...")
+        
         response = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[
@@ -203,6 +210,8 @@ JCLの文法規則:
         
         generated_code = response.choices[0].message.content
         
+        print(f"✅ OpenAI API response received: {generated_code[:100]}...")
+        
         return {
             "ok": True,
             "code": generated_code,
@@ -210,19 +219,26 @@ JCLの文法規則:
         }
         
     except Exception as e:
+        print(f"💥 AI Generation Error: {str(e)}")
         return {"ok": False, "error": f"AI生成エラー: {str(e)}"}
 
 @app.post("/ai/explain")
 def ai_explain(req: AIRequest, current_user: str = Depends(verify_token)):
     """AIコード解説エンドポイント"""
     try:
+        print(f"📖 AI Explain Request from user: {current_user}")
+        
         api_key = os.getenv("OPENAI_API_KEY")
         
         if not api_key:
+            print("❌ OpenAI API key not configured")
             return {"ok": False, "error": "OpenAI API key not configured"}
         
         if not req.code:
+            print("❌ No code provided for explanation")
             return {"ok": False, "error": "解説するコードが指定されていません"}
+        
+        print(f"🔑 Using OpenAI API key: {api_key[:10]}...")
         
         client = OpenAI(api_key=api_key)
         
@@ -233,6 +249,8 @@ def ai_explain(req: AIRequest, current_user: str = Depends(verify_token)):
 - プログラム全体の流れを説明
 - 初心者にも理解しやすいように丁寧に解説"""
 
+        print("📡 Sending explanation request to OpenAI API...")
+        
         response = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[
@@ -245,6 +263,8 @@ def ai_explain(req: AIRequest, current_user: str = Depends(verify_token)):
         
         explanation = response.choices[0].message.content
         
+        print(f"✅ OpenAI explanation response received: {explanation[:100]}...")
+        
         return {
             "ok": True,
             "explanation": explanation,
@@ -252,19 +272,26 @@ def ai_explain(req: AIRequest, current_user: str = Depends(verify_token)):
         }
         
     except Exception as e:
+        print(f"💥 AI Explanation Error: {str(e)}")
         return {"ok": False, "error": f"AI解説エラー: {str(e)}"}
 
 @app.post("/ai/optimize")
 def ai_optimize(req: AIRequest, current_user: str = Depends(verify_token)):
     """AIコード最適化エンドポイント"""
     try:
+        print(f"⚡ AI Optimize Request from user: {current_user}")
+        
         api_key = os.getenv("OPENAI_API_KEY")
         
         if not api_key:
+            print("❌ OpenAI API key not configured")
             return {"ok": False, "error": "OpenAI API key not configured"}
         
         if not req.code:
+            print("❌ No code provided for optimization")
             return {"ok": False, "error": "最適化するコードが指定されていません"}
+        
+        print(f"🔑 Using OpenAI API key: {api_key[:10]}...")
         
         client = OpenAI(api_key=api_key)
         
@@ -275,6 +302,8 @@ def ai_optimize(req: AIRequest, current_user: str = Depends(verify_token)):
 - パフォーマンス改善
 - ベストプラクティスの適用
 最適化されたコードと改善点の説明を提供してください。"""
+
+        print("📡 Sending optimization request to OpenAI API...")
 
         response = client.chat.completions.create(
             model="gpt-3.5-turbo",
@@ -288,6 +317,8 @@ def ai_optimize(req: AIRequest, current_user: str = Depends(verify_token)):
         
         optimization = response.choices[0].message.content
         
+        print(f"✅ OpenAI optimization response received: {optimization[:100]}...")
+        
         return {
             "ok": True,
             "optimization": optimization,
@@ -295,4 +326,5 @@ def ai_optimize(req: AIRequest, current_user: str = Depends(verify_token)):
         }
         
     except Exception as e:
+        print(f"💥 AI Optimization Error: {str(e)}")
         return {"ok": False, "error": f"AI最適化エラー: {str(e)}"}
