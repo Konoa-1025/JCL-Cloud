@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>JCL オンラインエディタ - 日本語でプログラミング</title>
+    <title>🌸 JCL Cloud - 日本語プログラミング環境</title>
     <style>
         * {
             margin: 0;
@@ -18,10 +18,122 @@
             color: #333;
         }
         
+        /* 共通コンテナ */
         .container {
             max-width: 1200px;
             margin: 0 auto;
             padding: 20px;
+        }
+        
+        /* 認証画面スタイル */
+        .auth-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .auth-box {
+            max-width: 400px;
+            width: 90%;
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            text-align: center;
+            animation: slideIn 0.5s ease-out;
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .auth-logo {
+            font-size: 4em;
+            margin-bottom: 20px;
+        }
+        
+        .auth-title {
+            font-size: 1.8em;
+            margin-bottom: 10px;
+            color: #333;
+        }
+        
+        .auth-subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 0.9em;
+        }
+        
+        .auth-form input {
+            width: 100%;
+            padding: 15px;
+            margin: 10px 0;
+            border: 2px solid #e1e1e1;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        
+        .auth-form input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 10px rgba(102, 126, 234, 0.2);
+        }
+        
+        .login-btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s;
+            margin-top: 10px;
+        }
+        
+        .login-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .login-btn:active {
+            transform: translateY(0);
+        }
+        
+        .auth-error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 15px;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .security-notice {
+            background: #d1ecf1;
+            color: #0c5460;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+            font-size: 0.85em;
+            border: 1px solid #bee5eb;
+        }
+        
+        /* メインエディタスタイル */
+        .main-container {
+            display: none; /* 初期状態は非表示 */
         }
         
         .header {
@@ -156,18 +268,56 @@
             background: rgba(255,255,255,0.3);
             transform: translateY(-1px);
         }
+        
+        /* 共通ユーティリティクラス */
+        .hidden {
+            display: none !important;
+        }
+        
+        .show {
+            display: block !important;
+        }
+        
+        .show-flex {
+            display: flex !important;
+        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>🌸 JCL オンラインエディタ</h1>
-            <p>日本語でプログラミングしよう！ブラウザでJCLコードを実行できます</p>
-            <div style="margin-top: 15px; background: rgba(255,255,255,0.2); padding: 10px; border-radius: 10px; font-size: 0.9em;">
-                👤 ログイン中: <span id="userEmail" style="font-weight: bold;">確認中...</span>
-                <button onclick="logout()" style="float: right; background: #dc3545; color: white; border: none; padding: 5px 15px; border-radius: 5px; cursor: pointer; font-size: 0.8em;">🚪 ログアウト</button>
+    <!-- 認証画面 -->
+    <div id="authScreen" class="auth-container">
+        <div class="auth-box">
+            <div class="auth-logo">🌸</div>
+            <h1 class="auth-title">JCL Cloud</h1>
+            <p class="auth-subtitle">日本語プログラミング環境へようこそ</p>
+            
+            <form id="loginForm" class="auth-form">
+                <input type="text" id="email" placeholder="📧 ユーザー名またはメールアドレス" required>
+                <input type="password" id="password" placeholder="🔑 パスワード" required>
+                <button type="submit" class="login-btn">🚀 ログインしてエディタへ</button>
+            </form>
+            
+            <div id="authError" class="auth-error hidden"></div>
+            
+            <div class="security-notice">
+                🔒 <strong>セキュリティ通知</strong><br>
+                このサービスは認証されたユーザーのみがアクセス可能です。<br>
+                不正アクセスや攻撃を防ぐため、承認制となっています。
             </div>
         </div>
+    </div>
+
+    <!-- メインエディタ画面 -->
+    <div id="mainScreen" class="main-container">
+        <div class="container">
+            <div class="header">
+                <h1>🌸 JCL オンラインエディタ</h1>
+                <p>日本語でプログラミングしよう！ブラウザでJCLコードを実行できます</p>
+                <div style="margin-top: 15px; background: rgba(255,255,255,0.2); padding: 10px; border-radius: 10px; font-size: 0.9em;">
+                    👤 ログイン中: <span id="userEmail" style="font-weight: bold;">確認中...</span>
+                    <button onclick="logout()" style="float: right; background: #dc3545; color: white; border: none; padding: 5px 15px; border-radius: 5px; cursor: pointer; font-size: 0.8em;">🚪 ログアウト</button>
+                </div>
+            </div>
         
         <div class="editor-container">
             <div class="toolbar">
@@ -207,18 +357,24 @@
     <script src="https://unpkg.com/monaco-editor@0.45.0/min/vs/loader.js"></script>
     
     <script>
-        // 🔒 認証チェック - 直接アクセスを防ぐ
-        const authToken = localStorage.getItem('jcl_auth_token');
+        // 統合認証システム - 1ページで認証とエディタを管理
         const API_URL = 'https://jcl-cloud.onrender.com';
+        let editor;
         
-        // 認証状態確認
-        async function checkAuthOnLoad() {
+        // ページロード時の初期化
+        document.addEventListener('DOMContentLoaded', function() {
+            checkAuthAndShowAppropriateScreen();
+            setupLoginForm();
+        });
+        
+        // 認証状態チェックして適切な画面を表示
+        async function checkAuthAndShowAppropriateScreen() {
+            const authToken = localStorage.getItem('jcl_auth_token');
             console.log('認証チェック開始'); // デバッグ用
             
             if (!authToken) {
-                console.log('トークンなし - 認証ページにリダイレクト'); // デバッグ用
-                // トークンがない場合は認証ページにリダイレクト
-                window.location.href = 'https://konoa-1025.github.io/JCL-Cloud/web-editor/auth.html';
+                console.log('トークンなし - 認証画面表示'); // デバッグ用
+                showAuthScreen();
                 return;
             }
             
@@ -231,36 +387,112 @@
                 
                 console.log('ステータス確認レスポンス:', response.status); // デバッグ用
                 
-                if (!response.ok) {
-                    console.log('認証無効 - 認証ページにリダイレクト'); // デバッグ用
-                    // 認証が無効な場合は認証ページにリダイレクト
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('認証レスポンス:', data); // デバッグ用
+                    
+                    // 認証成功 - メインエディタ表示
+                    const userInfo = data.user || data.user_email || data.email || 'ユーザー';
+                    console.log('表示ユーザー情報:', userInfo); // デバッグ用
+                    showMainScreen(userInfo);
+                } else {
+                    console.log('認証無効 - 認証画面表示'); // デバッグ用
                     localStorage.removeItem('jcl_auth_token');
-                    window.location.href = 'https://konoa-1025.github.io/JCL-Cloud/web-editor/auth.html';
-                    return;
+                    showAuthScreen();
                 }
-                
-                const data = await response.json();
-                console.log('認証レスポンス:', data); // デバッグ用
-                
-                // ユーザー情報を表示（APIレスポンスの構造に合わせて修正）
-                const userInfo = data.user || data.user_email || data.email || 'ユーザー';
-                document.getElementById('userEmail').textContent = userInfo;
-                console.log('表示ユーザー情報:', userInfo); // デバッグ用
-                
-                // 認証成功 - エディタを初期化
-                initializeEditor();
-                
             } catch (error) {
-                // エラーの場合は認証ページにリダイレクト
+                console.error('認証確認エラー:', error);
                 localStorage.removeItem('jcl_auth_token');
-                window.location.href = 'https://konoa-1025.github.io/JCL-Cloud/web-editor/auth.html';
+                showAuthScreen();
             }
         }
         
-        // ページ読み込み時に認証チェック
-        document.addEventListener('DOMContentLoaded', checkAuthOnLoad);
+        // 認証画面を表示
+        function showAuthScreen() {
+            document.getElementById('authScreen').classList.remove('hidden');
+            document.getElementById('mainScreen').classList.add('hidden');
+        }
         
-        let editor;
+        // メインエディタ画面を表示
+        function showMainScreen(userInfo) {
+            document.getElementById('authScreen').classList.add('hidden');
+            document.getElementById('mainScreen').classList.remove('hidden');
+            document.getElementById('userEmail').textContent = userInfo;
+            
+            // エディタを初期化（まだ初期化されていない場合）
+            if (!editor) {
+                initializeEditor();
+            }
+        }
+        
+        // ログインフォーム設定
+        function setupLoginForm() {
+            document.getElementById('loginForm').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                const email = document.getElementById('email').value;
+                const password = document.getElementById('password').value;
+                
+                hideAuthError();
+                
+                try {
+                    console.log('ログイン試行:', { email, password });
+                    
+                    const response = await fetch(`${API_URL}/login`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email, password })
+                    });
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        console.log('ログイン成功:', data);
+                        
+                        localStorage.setItem('jcl_auth_token', data.access_token);
+                        
+                        // メインエディタ画面に切り替え
+                        const userInfo = data.user_email || email;
+                        showMainScreen(userInfo);
+                    } else {
+                        const error = await response.json();
+                        console.error('ログイン失敗:', error);
+                        showAuthError(error.detail || 'ログインに失敗しました');
+                    }
+                } catch (error) {
+                    console.error('接続エラー:', error);
+                    showAuthError('ログインに失敗しました: ' + error.message);
+                }
+            });
+        }
+        
+        // 認証エラー表示
+        function showAuthError(message) {
+            const errorDiv = document.getElementById('authError');
+            errorDiv.textContent = '❌ ' + message;
+            errorDiv.classList.remove('hidden');
+            
+            // 5秒後にエラーメッセージを自動で隠す
+            setTimeout(() => {
+                errorDiv.classList.add('hidden');
+            }, 5000);
+        }
+        
+        // 認証エラー非表示
+        function hideAuthError() {
+            document.getElementById('authError').classList.add('hidden');
+        }
+        
+        // ログアウト機能
+        function logout() {
+            localStorage.removeItem('jcl_auth_token');
+            showAuthScreen();
+            
+            // エディタをリセット
+            if (editor) {
+                editor.setValue('');
+            }
+            document.getElementById('output').innerHTML = 'ログアウトしました。';
+        }
         
         function initializeEditor() {
         
@@ -320,8 +552,8 @@
         async function runCode() {
             const token = localStorage.getItem('jcl_auth_token');
             if (!token) {
-                alert('認証が必要です。ログインページにリダイレクトします。');
-                window.location.href = 'https://konoa-1025.github.io/JCL-Cloud/web-editor/auth.html';
+                alert('認証が必要です。');
+                showAuthScreen();
                 return;
             }
             
@@ -368,7 +600,13 @@
         // ログアウト機能
         function logout() {
             localStorage.removeItem('jcl_auth_token');
-            window.location.href = 'https://konoa-1025.github.io/JCL-Cloud/web-editor/auth.html';
+            showAuthScreen();
+            
+            // エディタをリセット
+            if (editor) {
+                editor.setValue('');
+            }
+            document.getElementById('output').innerHTML = 'ログアウトしました。';
         }
         
         // エディタクリア
@@ -385,5 +623,10 @@
             }
         }
     </script>
+    
+    <!-- Monaco Editor -->
+    <script src="https://unpkg.com/monaco-editor@0.45.0/min/vs/loader.js"></script>
+        </div>  <!-- container終了 -->
+    </div>  <!-- mainScreen終了 -->
 </body>
 </html>
