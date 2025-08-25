@@ -371,6 +371,10 @@
                 🔒 <strong>セキュリティ通知</strong><br>
                 このサービスは認証されたユーザーのみがアクセス可能です。<br>
                 不正アクセスや攻撃を防ぐため、承認制となっています。
+                <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #bee5eb; font-size: 0.8em; color: #0c5460;">
+                    <strong>🚀 Version 2.1.0</strong> - AI支援・scanf対応版<br>
+                    <span style="font-size: 0.75em;">最終更新: 2025年8月26日</span>
+                </div>
             </div>
         </div>
     </div>
@@ -1011,43 +1015,6 @@
                 document.getElementById('output').innerHTML = `<span class="error">❌ 通信エラー: ${error.message}</span>`;
             }
         }
-
-            // 保存された入力値を取得
-            let inputData = null;
-            const saved = localStorage.getItem('jcl_input_values');
-            if (saved) {
-                try {
-                    inputData = JSON.parse(saved);
-                } catch (e) {
-                    console.error('入力値の読み込みエラー:', e);
-                }
-            }
-
-            document.getElementById('output').innerHTML = '⏳ 実行中...';
-
-            try {
-                const response = await fetch('/run', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`
-                    },
-                    body: JSON.stringify({ 
-                        code: code,
-                        input_data: inputData 
-                    })
-                });
-
-                const result = await response.json();
-                
-                if (result.ok) {
-                    document.getElementById('output').innerHTML = `✅ 実行成功\n${result.stdout}`;
-                } else {
-                    document.getElementById('output').innerHTML = `❌ ${result.stage}エラー:\n${result.stderr || result.stdout}`;
-                }
-            } catch (error) {
-                document.getElementById('output').innerHTML = `❌ 通信エラー: ${error.message}`;
-            }
 
         // 既存のrunCode関数を置き換え
         function runCode() {
