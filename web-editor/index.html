@@ -770,20 +770,22 @@
                         'Authorization': `Bearer ${token}`
                     },
                     body: JSON.stringify({ 
-                        prompt: prompt,
-                        language: 'jcl'
+                        prompt: prompt
                     })
                 });
                 
                 if (response.ok) {
                     const result = await response.json();
-                    if (result.code) {
+                    if (result.ok && result.code) {
                         editor.setValue(result.code);
-                        outputDiv.innerHTML = `✨ AIがコードを生成しました！\n\n説明: ${result.explanation || 'JCLコードが生成されました。'}`;
+                        outputDiv.innerHTML = `✨ AIがコードを生成しました！\n\n${result.code}`;
                         document.getElementById('aiPrompt').value = '';
+                    } else {
+                        outputDiv.innerHTML = `❌ エラー: ${result.error || '生成に失敗しました'}`;
                     }
                 } else {
-                    outputDiv.innerHTML = '❌ AI機能はまだ実装中です。しばらくお待ちください。';
+                    const error = await response.json();
+                    outputDiv.innerHTML = `❌ エラー: ${error.error || 'AI機能の呼び出しに失敗しました'}`;
                 }
             } catch (error) {
                 outputDiv.innerHTML = `❌ AI接続エラー: ${error.message}`;
@@ -810,16 +812,20 @@
                         'Authorization': `Bearer ${token}`
                     },
                     body: JSON.stringify({ 
-                        code: code,
-                        language: 'jcl'
+                        code: code
                     })
                 });
                 
                 if (response.ok) {
                     const result = await response.json();
-                    outputDiv.innerHTML = `💡 コード説明:\n\n${result.explanation || 'コードの説明を生成できませんでした。'}`;
+                    if (result.ok && result.explanation) {
+                        outputDiv.innerHTML = `💡 コード説明:\n\n${result.explanation}`;
+                    } else {
+                        outputDiv.innerHTML = `❌ エラー: ${result.error || '説明の生成に失敗しました'}`;
+                    }
                 } else {
-                    outputDiv.innerHTML = '❌ AI機能はまだ実装中です。しばらくお待ちください。';
+                    const error = await response.json();
+                    outputDiv.innerHTML = `❌ エラー: ${error.error || 'AI機能の呼び出しに失敗しました'}`;
                 }
             } catch (error) {
                 outputDiv.innerHTML = `❌ AI接続エラー: ${error.message}`;
@@ -846,19 +852,20 @@
                         'Authorization': `Bearer ${token}`
                     },
                     body: JSON.stringify({ 
-                        code: code,
-                        language: 'jcl'
+                        code: code
                     })
                 });
                 
                 if (response.ok) {
                     const result = await response.json();
-                    if (result.code) {
-                        editor.setValue(result.code);
-                        outputDiv.innerHTML = `⚡ コードを改善しました！\n\n改善点: ${result.improvements || 'コードが最適化されました。'}`;
+                    if (result.ok && result.optimization) {
+                        outputDiv.innerHTML = `⚡ コード改善提案:\n\n${result.optimization}`;
+                    } else {
+                        outputDiv.innerHTML = `❌ エラー: ${result.error || '改善提案の生成に失敗しました'}`;
                     }
                 } else {
-                    outputDiv.innerHTML = '❌ AI機能はまだ実装中です。しばらくお待ちください。';
+                    const error = await response.json();
+                    outputDiv.innerHTML = `❌ エラー: ${error.error || 'AI機能の呼び出しに失敗しました'}`;
                 }
             } catch (error) {
                 outputDiv.innerHTML = `❌ AI接続エラー: ${error.message}`;
@@ -944,122 +951,7 @@
             panel.classList.toggle('show');
         }
 
-        // AIコード生成
-        async function generateCode() {
-            const prompt = document.getElementById('aiPrompt').value.trim();
-            if (!prompt) {
-                alert('プロンプトを入力してください');
-                return;
-            }
-
-            const aiOutput = document.getElementById('aiOutput');
-            aiOutput.innerHTML = '🤖 AIがコードを生成中...';
-
-            try {
-                const response = await fetch('/ai/generate', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`
-                    },
-                    body: JSON.stringify({ prompt })
-                });
-
-                const result = await response.json();
-                
-                if (result.ok) {
-                    aiOutput.innerHTML = `<pre>${result.code}</pre>`;
-                    // 生成されたコードをエディタに挿入するオプション
-                    if (confirm('生成されたコードをエディタに挿入しますか？')) {
-                        if (editor) {
-                            editor.setValue(result.code);
-                        }
-                    }
-                } else {
-                    aiOutput.innerHTML = `❌ エラー: ${result.error}`;
-                }
-            } catch (error) {
-                aiOutput.innerHTML = `❌ 通信エラー: ${error.message}`;
-            }
-        }
-
-        // AIコード解説
-        async function explainCode() {
-            if (!editor) {
-                alert('エディタが初期化されていません');
-                return;
-            }
-
-            const code = editor.getValue().trim();
-            if (!code) {
-                alert('解説するコードを入力してください');
-                return;
-            }
-
-            const aiOutput = document.getElementById('aiOutput');
-            aiOutput.innerHTML = '🤖 AIがコードを解説中...';
-
-            try {
-                const response = await fetch('/ai/explain', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`
-                    },
-                    body: JSON.stringify({ code })
-                });
-
-                const result = await response.json();
-                
-                if (result.ok) {
-                    aiOutput.innerHTML = `<div class="ai-explanation">${result.explanation}</div>`;
-                } else {
-                    aiOutput.innerHTML = `❌ エラー: ${result.error}`;
-                }
-            } catch (error) {
-                aiOutput.innerHTML = `❌ 通信エラー: ${error.message}`;
-            }
-        }
-
-        // AIコード最適化
-        async function optimizeCode() {
-            if (!editor) {
-                alert('エディタが初期化されていません');
-                return;
-            }
-
-            const code = editor.getValue().trim();
-            if (!code) {
-                alert('最適化するコードを入力してください');
-                return;
-            }
-
-            const aiOutput = document.getElementById('aiOutput');
-            aiOutput.innerHTML = '🤖 AIがコードを最適化中...';
-
-            try {
-                const response = await fetch('/ai/optimize', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`
-                    },
-                    body: JSON.stringify({ code })
-                });
-
-                const result = await response.json();
-                
-                if (result.ok) {
-                    aiOutput.innerHTML = `<div class="ai-optimization">${result.optimization}</div>`;
-                } else {
-                    aiOutput.innerHTML = `❌ エラー: ${result.error}`;
-                }
-            } catch (error) {
-                aiOutput.innerHTML = `❌ 通信エラー: ${error.message}`;
-            }
-        }
-
-        // 実行時にscanf対応
+        // 実行時にscanf対応 - テキストエリアから入力値を取得
         async function runCodeWithInput() {
             if (!editor) {
                 document.getElementById('output').innerHTML = '❌ エディタが初期化されていません';
@@ -1071,6 +963,54 @@
                 document.getElementById('output').innerHTML = '❌ コードを入力してください';
                 return;
             }
+
+            // テキストエリアから入力値を取得
+            const inputValues = document.getElementById('inputValues').value.trim();
+            let inputData = null;
+            if (inputValues) {
+                inputData = inputValues.split('\n').filter(line => line.trim() !== '');
+            }
+
+            document.getElementById('output').innerHTML = '⏳ 実行中...';
+
+            try {
+                const token = localStorage.getItem('jcl_auth_token');
+                const response = await fetch(`${API_URL}/run`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ 
+                        code: code,
+                        input_data: inputData 
+                    })
+                });
+
+                if (response.status === 401) {
+                    alert('認証が切れました。再ログインしてください。');
+                    logout();
+                    return;
+                }
+
+                const result = await response.json();
+                
+                if (result.ok) {
+                    document.getElementById('output').innerHTML = `<div class="success">✅ 実行成功！</div>\n\n${result.stdout || '(出力なし)'}`;
+                } else {
+                    let errorMsg = `❌ ${result.stage}エラー:\n\n`;
+                    if (result.stderr) {
+                        errorMsg += `エラー詳細:\n${result.stderr}\n\n`;
+                    }
+                    if (result.stdout) {
+                        errorMsg += `出力:\n${result.stdout}`;
+                    }
+                    document.getElementById('output').innerHTML = `<span class="error">${errorMsg}</span>`;
+                }
+            } catch (error) {
+                document.getElementById('output').innerHTML = `<span class="error">❌ 通信エラー: ${error.message}</span>`;
+            }
+        }
 
             // 保存された入力値を取得
             let inputData = null;
@@ -1108,17 +1048,11 @@
             } catch (error) {
                 document.getElementById('output').innerHTML = `❌ 通信エラー: ${error.message}`;
             }
-        }
 
         // 既存のrunCode関数を置き換え
         function runCode() {
             runCodeWithInput();
         }
-
-        // 初期化時に入力値を読み込み
-        window.addEventListener('DOMContentLoaded', function() {
-            setTimeout(loadSavedInputValues, 1000);
-        });
     </script>
         </div>  <!-- container終了 -->
     </div>  <!-- mainScreen終了 -->
