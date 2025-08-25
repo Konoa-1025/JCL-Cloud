@@ -27,7 +27,7 @@
         
         /* 認証画面スタイル */
         .auth-container {
-            display: flex;
+            display: flex; /* 初期状態で表示 */
             align-items: center;
             justify-content: center;
             min-height: 100vh;
@@ -292,8 +292,8 @@
             <p class="auth-subtitle">日本語プログラミング環境へようこそ</p>
             
             <form id="loginForm" class="auth-form">
-                <input type="text" id="email" placeholder="📧 ユーザー名またはメールアドレス" required>
-                <input type="password" id="password" placeholder="🔑 パスワード" required>
+                <input type="text" id="email" name="email" placeholder="📧 ユーザー名またはメールアドレス" autocomplete="username" required>
+                <input type="password" id="password" name="password" placeholder="🔑 パスワード" autocomplete="current-password" required>
                 <button type="submit" class="login-btn">🚀 ログインしてエディタへ</button>
             </form>
             
@@ -363,8 +363,12 @@
         
         // ページロード時の初期化
         document.addEventListener('DOMContentLoaded', function() {
-            checkAuthAndShowAppropriateScreen();
+            console.log('ページロード完了'); // デバッグ用
+            // 最初に認証画面を確実に表示
+            showAuthScreen();
             setupLoginForm();
+            // 少し遅延してから認証チェック
+            setTimeout(checkAuthAndShowAppropriateScreen, 100);
         });
         
         // 認証状態チェックして適切な画面を表示
@@ -409,12 +413,18 @@
         
         // 認証画面を表示
         function showAuthScreen() {
+            console.log('認証画面を表示'); // デバッグ用
+            document.getElementById('authScreen').style.display = 'flex';
+            document.getElementById('mainScreen').style.display = 'none';
             document.getElementById('authScreen').classList.remove('hidden');
             document.getElementById('mainScreen').classList.add('hidden');
         }
         
         // メインエディタ画面を表示
         function showMainScreen(userInfo) {
+            console.log('メインエディタ画面を表示:', userInfo); // デバッグ用
+            document.getElementById('authScreen').style.display = 'none';
+            document.getElementById('mainScreen').style.display = 'block';
             document.getElementById('authScreen').classList.add('hidden');
             document.getElementById('mainScreen').classList.remove('hidden');
             document.getElementById('userEmail').textContent = userInfo;
