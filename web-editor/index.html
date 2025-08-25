@@ -163,6 +163,10 @@
         <div class="header">
             <h1>🌸 JCL オンラインエディタ</h1>
             <p>日本語でプログラミングしよう！ブラウザでJCLコードを実行できます</p>
+            <div style="margin-top: 15px; background: rgba(255,255,255,0.2); padding: 10px; border-radius: 10px; font-size: 0.9em;">
+                👤 ログイン中: <span id="userEmail" style="font-weight: bold;">確認中...</span>
+                <button onclick="logout()" style="float: right; background: #dc3545; color: white; border: none; padding: 5px 15px; border-radius: 5px; cursor: pointer; font-size: 0.8em;">🚪 ログアウト</button>
+            </div>
         </div>
         
         <div class="editor-container">
@@ -203,8 +207,49 @@
     <script src="https://unpkg.com/monaco-editor@0.45.0/min/vs/loader.js"></script>
     
     <script>
-        let editor;
+        // 🔒 認証チェック - 直接アクセスを防ぐ
+        const authToken = localStorage.getItem('jcl_auth_token');
         const API_URL = 'https://jcl-cloud.onrender.com';
+        
+        // 認証状態確認
+        async function checkAuthOnLoad() {
+            if (!authToken) {
+                // トークンがない場合は認証ページにリダイレクト
+                window.location.href = 'https://konoa-1025.github.io/JCL-Cloud/web-editor/auth.html';
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_URL}/status`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                
+                if (!response.ok) {
+                    // 認証が無効な場合は認証ページにリダイレクト
+                    localStorage.removeItem('jcl_auth_token');
+                    window.location.href = 'https://konoa-1025.github.io/JCL-Cloud/web-editor/auth.html';
+                    return;
+                }
+                
+                const data = await response.json();
+                document.getElementById('userEmail').textContent = data.user;
+                
+                // 認証成功 - エディタを初期化
+                initializeEditor();
+                
+            } catch (error) {
+                // エラーの場合は認証ページにリダイレクト
+                localStorage.removeItem('jcl_auth_token');
+                window.location.href = 'https://konoa-1025.github.io/JCL-Cloud/web-editor/auth.html';
+            }
+        }
+        
+        // ページ読み込み時に認証チェック
+        document.addEventListener('DOMContentLoaded', checkAuthOnLoad);
+        
+        let editor;
+        
+        function initializeEditor() {
         
         // サンプルコード
         const samples = {
@@ -258,26 +303,35 @@
             });
         });
         
-        // コード実行
+        // コード実行（認証付き）
         async function runCode() {
-            const code = editor.getValue();
-            const outputDiv = document.getElementById('output');
-            
-            if (!code.trim()) {
-                outputDiv.innerHTML = '<span class="error">❌ コードを入力してください。</span>';
+            const token = localStorage.getItem('jcl_auth_token');
+            if (!token) {
+                alert('認証が必要です。ログインページにリダイレクトします。');
+                window.location.href = 'https://konoa-1025.github.io/JCL-Cloud/web-editor/auth.html';
                 return;
             }
             
-            outputDiv.innerHTML = '<div class="loading">⏳ 実行中...</div>';
+            const code = editor.getValue();
+            const outputDiv = document.getElementById('output');
+            
+            outputDiv.innerHTML = '⏳ 実行中...';
             
             try {
                 const response = await fetch(`${API_URL}/run`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
                     },
                     body: JSON.stringify({ code: code })
                 });
+                
+                if (response.status === 401) {
+                    alert('認証が切れました。再ログインしてください。');
+                    logout();
+                    return;
+                }
                 
                 const result = await response.json();
                 
@@ -296,6 +350,12 @@
             } catch (error) {
                 outputDiv.innerHTML = `<span class="error">❌ 接続エラー: ${error.message}</span>`;
             }
+        }
+        
+        // ログアウト機能
+        function logout() {
+            localStorage.removeItem('jcl_auth_token');
+            window.location.href = 'https://konoa-1025.github.io/JCL-Cloud/web-editor/auth.html';
         }
         
         // エディタクリア
