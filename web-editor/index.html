@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JCL オンラインエディタ - 日本語でプログラミング</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+        
+        .editor-container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+        
+        .toolbar {
+            background: #f8f9fa;
+            padding: 15px 20px;
+            border-bottom: 1px solid #e9ecef;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            font-size: 14px;
+        }
+        
+        .btn-primary {
+            background: #007bff;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #0056b3;
+            transform: translateY(-2px);
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+        
+        .editor-wrapper {
+            height: 400px;
+            border: 1px solid #e9ecef;
+        }
+        
+        .output-container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+        
+        .output-header {
+            background: #28a745;
+            color: white;
+            padding: 15px 20px;
+            font-weight: bold;
+        }
+        
+        .output-content {
+            padding: 20px;
+            font-family: 'Consolas', monospace;
+            background: #f8f9fa;
+            min-height: 150px;
+            white-space: pre-wrap;
+            border-radius: 0 0 15px 15px;
+        }
+        
+        .loading {
+            color: #007bff;
+            text-align: center;
+            padding: 40px;
+        }
+        
+        .error {
+            color: #dc3545;
+        }
+        
+        .success {
+            color: #28a745;
+        }
+        
+        .samples {
+            margin-top: 20px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 15px;
+            padding: 20px;
+        }
+        
+        .samples h3 {
+            color: white;
+            margin-bottom: 15px;
+        }
+        
+        .sample-btn {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: 1px solid rgba(255,255,255,0.3);
+            padding: 8px 15px;
+            margin: 5px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .sample-btn:hover {
+            background: rgba(255,255,255,0.3);
+            transform: translateY(-1px);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🌸 JCL オンラインエディタ</h1>
+            <p>日本語でプログラミングしよう！ブラウザでJCLコードを実行できます</p>
+        </div>
+        
+        <div class="editor-container">
+            <div class="toolbar">
+                <button class="btn btn-primary" onclick="runCode()">
+                    ▶️ 実行する
+                </button>
+                <button class="btn btn-secondary" onclick="clearEditor()">
+                    🗑️ クリア
+                </button>
+                <span style="margin-left: auto; color: #666;">
+                    💡 Ctrl+Enter でも実行できます
+                </span>
+            </div>
+            <div class="editor-wrapper" id="editor"></div>
+        </div>
+        
+        <div class="output-container">
+            <div class="output-header">
+                📋 実行結果
+            </div>
+            <div class="output-content" id="output">
+                ここに実行結果が表示されます。
+                まずは上のエディタでJCLコードを書いて「実行する」ボタンを押してみてください！
+            </div>
+        </div>
+        
+        <div class="samples">
+            <h3>📚 サンプルコード</h3>
+            <button class="sample-btn" onclick="loadSample('hello')">Hello World</button>
+            <button class="sample-btn" onclick="loadSample('greeting')">あいさつ</button>
+            <button class="sample-btn" onclick="loadSample('calculation')">計算</button>
+            <button class="sample-btn" onclick="loadSample('loop')">繰り返し</button>
+        </div>
+    </div>
+
+    <!-- Monaco Editor -->
+    <script src="https://unpkg.com/monaco-editor@0.45.0/min/vs/loader.js"></script>
+    
+    <script>
+        let editor;
+        const API_URL = 'https://jcl-cloud.onrender.com';
+        
+        // サンプルコード
+        const samples = {
+            hello: `主関数 {
+    表示("Hello, World!\\n");
+    戻る;
+}`,
+            greeting: `主関数 {
+    表示("こんにちは、JCLの世界へようこそ！\\n");
+    表示("今日も素晴らしい一日ですね！\\n");
+    戻る;
+}`,
+            calculation: `主関数 {
+    整数 a = 10;
+    整数 b = 20;
+    整数 合計 = a + b;
+    
+    表示("計算結果: ");
+    表示(合計);
+    表示("\\n");
+    戻る;
+}`,
+            loop: `主関数 {
+    整数 i;
+    
+    為に(i = 1; i <= 5; i++) {
+        表示("カウント: ");
+        表示(i);
+        表示("\\n");
+    }
+    
+    表示("完了！\\n");
+    戻る;
+}`
+        };
+        
+        // Monaco Editor初期化
+        require.config({ paths: { 'vs': 'https://unpkg.com/monaco-editor@0.45.0/min/vs' }});
+        require(['vs/editor/editor.main'], function () {
+            editor = monaco.editor.create(document.getElementById('editor'), {
+                value: samples.hello,
+                language: 'c',
+                theme: 'vs-dark',
+                fontSize: 16,
+                lineNumbers: 'on',
+                roundedSelection: false,
+                scrollBeyondLastLine: false,
+                readOnly: false,
+                automaticLayout: true
+            });
+            
+            // Ctrl+Enter で実行
+            editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, function() {
+                runCode();
+            });
+        });
+        
+        // コード実行
+        async function runCode() {
+            const code = editor.getValue();
+            const outputDiv = document.getElementById('output');
+            
+            if (!code.trim()) {
+                outputDiv.innerHTML = '<span class="error">❌ コードを入力してください。</span>';
+                return;
+            }
+            
+            outputDiv.innerHTML = '<div class="loading">⏳ 実行中...</div>';
+            
+            try {
+                const response = await fetch(`${API_URL}/run`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ code: code })
+                });
+                
+                const result = await response.json();
+                
+                if (result.ok) {
+                    outputDiv.innerHTML = `<div class="success">✅ 実行成功！</div>\\n\\n${result.stdout || '(出力なし)'}`;
+                } else {
+                    let errorMsg = `❌ ${result.stage}エラー:\\n\\n`;
+                    if (result.stderr) {
+                        errorMsg += `エラー詳細:\\n${result.stderr}\\n\\n`;
+                    }
+                    if (result.stdout) {
+                        errorMsg += `出力:\\n${result.stdout}`;
+                    }
+                    outputDiv.innerHTML = `<span class="error">${errorMsg}</span>`;
+                }
+            } catch (error) {
+                outputDiv.innerHTML = `<span class="error">❌ 接続エラー: ${error.message}</span>`;
+            }
+        }
+        
+        // エディタクリア
+        function clearEditor() {
+            editor.setValue('');
+            document.getElementById('output').innerHTML = 'エディタをクリアしました。新しいコードを書いてみてください！';
+        }
+        
+        // サンプル読み込み
+        function loadSample(sampleName) {
+            if (samples[sampleName]) {
+                editor.setValue(samples[sampleName]);
+                document.getElementById('output').innerHTML = `📝 "${sampleName}" サンプルを読み込みました。「実行する」ボタンを押してみてください！`;
+            }
+        }
+    </script>
+</body>
+</html>
