@@ -282,14 +282,14 @@
                 const result = await response.json();
                 
                 if (result.ok) {
-                    outputDiv.innerHTML = `<div class="success">✅ 実行成功！</div>\\n\\n${result.stdout || '(出力なし)'}`;
+                    outputDiv.innerHTML = `<div class="success">✅ 実行成功！</div>\n\n${result.stdout || '(出力なし)'}`;
                 } else {
-                    let errorMsg = `❌ ${result.stage}エラー:\\n\\n`;
+                    let errorMsg = `❌ ${result.stage}エラー:\n\n`;
                     if (result.stderr) {
-                        errorMsg += `エラー詳細:\\n${result.stderr}\\n\\n`;
+                        errorMsg += `エラー詳細:\n${result.stderr}\n\n`;
                     }
                     if (result.stdout) {
-                        errorMsg += `出力:\\n${result.stdout}`;
+                        errorMsg += `出力:\n${result.stdout}`;
                     }
                     outputDiv.innerHTML = `<span class="error">${errorMsg}</span>`;
                 }
