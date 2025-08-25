@@ -3,6 +3,9 @@ from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
 import subprocess, tempfile, os, textwrap, shutil
 
+# JCLトランスパイラをインポート
+from transpiler import transpile_jc_to_c
+
 app = FastAPI()
 
 # 必要に応じてフロントのドメインを追加
@@ -17,12 +20,22 @@ class RunReq(BaseModel):
     code: str
 
 def jcl_to_c(jcl_code: str) -> str:
-    # TODO: のりのJCLトランスパイラで置き換える
-    # いったんダミー（最低限の通し確認用）
-    return textwrap.dedent("""\
-    #include <stdio.h>
-    int main(){ printf("Hello from JCL!\\n"); return 0; }
-    """)
+    """
+    JCLコードをC言語コードにトランスパイルする
+    完全なJCLトランスパイラを使用
+    """
+    try:
+        return transpile_jc_to_c(jcl_code)
+    except Exception as e:
+        # トランスパイルエラーの場合、エラー情報を含むCコードを生成
+        error_c_code = f'''
+#include <stdio.h>
+int main() {{
+    printf("JCLトランスパイルエラー: {str(e)}\\n");
+    return 1;
+}}
+'''
+        return error_c_code
 
 @app.post("/run")
 def run(req: RunReq):
