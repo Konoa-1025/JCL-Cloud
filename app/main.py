@@ -43,17 +43,34 @@ def run(req: RunReq):
     try:
         c_path = os.path.join(work, "out.c")
         exe_path = os.path.join(work, "a.out")
-        open(c_path, "w").write(jcl_to_c(req.code))
+        
+        # JCLからCにトランスパイル
+        c_code = jcl_to_c(req.code)
+        
+        # 生成されたCコードをファイルに書き込み
+        open(c_path, "w").write(c_code)
 
         # コンパイル
         compiler_cmd = ["gcc", c_path, "-o", exe_path]
         r = subprocess.run(compiler_cmd, capture_output=True, text=True, timeout=15)
         if r.returncode != 0:
-            return {"ok": False, "stage":"compile", "stdout": r.stdout, "stderr": r.stderr}
+            return {
+                "ok": False, 
+                "stage": "compile", 
+                "stdout": r.stdout, 
+                "stderr": r.stderr,
+                "generated_c": c_code  # デバッグ用
+            }
 
         # 実行（2秒タイムアウト）
         r2 = subprocess.run([exe_path], capture_output=True, text=True, timeout=2)
-        return {"ok": r2.returncode == 0, "stage":"run", "stdout": r2.stdout, "stderr": r2.stderr}
+        return {
+            "ok": r2.returncode == 0, 
+            "stage": "run", 
+            "stdout": r2.stdout, 
+            "stderr": r2.stderr,
+            "generated_c": c_code  # デバッグ用
+        }
     except subprocess.TimeoutExpired:
         return {"ok": False, "stage": "run", "stdout": "", "stderr": "Execution timed out (2 seconds)"}
     except Exception as e:

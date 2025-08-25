@@ -2,8 +2,8 @@ import requests
 import json
 
 def test_real_jcl():
-    base_url = "http://127.0.0.1:8080"  # ローカルテスト用
-    # base_url = "https://jcl-cloud.onrender.com"  # 本番用
+    # base_url = "http://127.0.0.1:8080"  # ローカルテスト用
+    base_url = "https://jcl-cloud.onrender.com"  # 本番用
     
     print("🔥 本格JCLトランスパイラ テスト開始")
     print("=" * 60)
