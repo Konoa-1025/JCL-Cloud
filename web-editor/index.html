@@ -213,18 +213,26 @@
         
         // 認証状態確認
         async function checkAuthOnLoad() {
+            console.log('認証チェック開始'); // デバッグ用
+            
             if (!authToken) {
+                console.log('トークンなし - 認証ページにリダイレクト'); // デバッグ用
                 // トークンがない場合は認証ページにリダイレクト
                 window.location.href = 'https://konoa-1025.github.io/JCL-Cloud/web-editor/auth.html';
                 return;
             }
+            
+            console.log('トークン確認中:', authToken.substring(0, 20) + '...'); // デバッグ用
             
             try {
                 const response = await fetch(`${API_URL}/status`, {
                     headers: { 'Authorization': `Bearer ${authToken}` }
                 });
                 
+                console.log('ステータス確認レスポンス:', response.status); // デバッグ用
+                
                 if (!response.ok) {
+                    console.log('認証無効 - 認証ページにリダイレクト'); // デバッグ用
                     // 認証が無効な場合は認証ページにリダイレクト
                     localStorage.removeItem('jcl_auth_token');
                     window.location.href = 'https://konoa-1025.github.io/JCL-Cloud/web-editor/auth.html';
@@ -232,7 +240,12 @@
                 }
                 
                 const data = await response.json();
-                document.getElementById('userEmail').textContent = data.user;
+                console.log('認証レスポンス:', data); // デバッグ用
+                
+                // ユーザー情報を表示（APIレスポンスの構造に合わせて修正）
+                const userInfo = data.user || data.user_email || data.email || 'ユーザー';
+                document.getElementById('userEmail').textContent = userInfo;
+                console.log('表示ユーザー情報:', userInfo); // デバッグ用
                 
                 // 認証成功 - エディタを初期化
                 initializeEditor();

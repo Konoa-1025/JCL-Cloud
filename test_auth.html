@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🔐 JCL Cloud - 認証が必要です</title>
+    <title>🔐 JCL Cloud - 認証テスト</title>
     <style>
         * {
             margin: 0;
@@ -108,6 +108,15 @@
             border: 1px solid #f5c6cb;
         }
         
+        .auth-success {
+            background: #d4edda;
+            color: #155724;
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 15px;
+            border: 1px solid #c3e6cb;
+        }
+        
         .security-notice {
             background: #d1ecf1;
             color: #0c5460;
@@ -125,35 +134,28 @@
     <!-- 認証画面 -->
     <div id="authContainer" class="auth-container">
         <div class="auth-logo">🌸</div>
-        <h1 class="auth-title">JCL Cloud</h1>
-        <p class="auth-subtitle">日本語プログラミング環境へようこそ</p>
+        <h1 class="auth-title">JCL Cloud - ローカルテスト</h1>
+        <p class="auth-subtitle">認証システムのテスト環境</p>
         
         <form id="loginForm" class="auth-form">
             <input type="text" id="email" placeholder="📧 ユーザー名またはメールアドレス" required>
             <input type="password" id="password" placeholder="🔑 パスワード" required>
-            <button type="submit" class="login-btn">🚀 ログインしてエディタへ</button>
+            <button type="submit" class="login-btn">🚀 ログインテスト</button>
         </form>
         
         <div id="authError" class="auth-error hidden"></div>
+        <div id="authSuccess" class="auth-success hidden"></div>
         
         <div class="security-notice">
-            🔒 <strong>セキュリティ通知</strong><br>
-            このサービスは認証されたユーザーのみがアクセス可能です。<br>
-            不正アクセスや攻撃を防ぐため、承認制となっています。
+            🔧 <strong>テスト環境</strong><br>
+            ローカルサーバー (localhost:8080) での動作確認用です。<br>
+            ホワイトリスト: norifumi.kondo.it@gmail.com, studio.delta.tester1@gmail.com<br>
+            パスワード: jcl2025
         </div>
     </div>
 
     <script>
-        const API_URL = 'https://jcl-cloud.onrender.com';
-        
-        // 既にログイン済みかチェック
-        document.addEventListener('DOMContentLoaded', function() {
-            const authToken = localStorage.getItem('jcl_auth_token');
-            if (authToken) {
-                // 既にトークンがある場合は、メインエディタに自動リダイレクト
-                window.location.href = 'https://konoa-1025.github.io/JCL-Cloud/web-editor/';
-            }
-        });
+        const API_URL = 'http://127.0.0.1:8080';  // ローカルサーバー
         
         // ログイン処理
         document.getElementById('loginForm').addEventListener('submit', async function(e) {
@@ -162,38 +164,78 @@
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
             
+            hideMessages();
+            
             try {
+                console.log('ログイン試行:', { email, password });
+                
                 const response = await fetch(`${API_URL}/login`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email, password })
                 });
                 
+                console.log('レスポンス:', response);
+                
                 if (response.ok) {
                     const data = await response.json();
-                    localStorage.setItem('jcl_auth_token', data.access_token);
+                    console.log('ログイン成功:', data);
                     
-                    // ログイン成功後、メインエディタページにリダイレクト
-                    window.location.href = 'https://konoa-1025.github.io/JCL-Cloud/web-editor/';
+                    localStorage.setItem('jcl_auth_token', data.access_token);
+                    showSuccess(`✅ ログイン成功！ユーザー: ${data.user_email || email}`);
+                    
+                    // ステータス確認テスト
+                    setTimeout(testStatus, 1000);
                 } else {
                     const error = await response.json();
-                    showAuthError(error.detail);
+                    console.error('ログイン失敗:', error);
+                    showError(error.detail || 'ログインに失敗しました');
                 }
             } catch (error) {
-                showAuthError('ログインに失敗しました: ' + error.message);
+                console.error('接続エラー:', error);
+                showError('ログインに失敗しました: ' + error.message);
             }
         });
         
-        // エラー表示
-        function showAuthError(message) {
+        // ステータス確認テスト
+        async function testStatus() {
+            const token = localStorage.getItem('jcl_auth_token');
+            if (!token) return;
+            
+            try {
+                const response = await fetch(`${API_URL}/status`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('ステータス確認成功:', data);
+                    showSuccess(`✅ 認証状態確認成功！ユーザー: ${data.user || 'unknown'}`);
+                } else {
+                    console.error('ステータス確認失敗:', response.status);
+                    showError('認証状態の確認に失敗しました');
+                }
+            } catch (error) {
+                console.error('ステータス確認エラー:', error);
+                showError('ステータス確認エラー: ' + error.message);
+            }
+        }
+        
+        function hideMessages() {
+            document.getElementById('authError').classList.add('hidden');
+            document.getElementById('authSuccess').classList.add('hidden');
+        }
+        
+        function showError(message) {
             const errorDiv = document.getElementById('authError');
             errorDiv.textContent = '❌ ' + message;
             errorDiv.classList.remove('hidden');
-            
-            // 5秒後にエラーメッセージを自動で隠す
-            setTimeout(() => {
-                errorDiv.classList.add('hidden');
-            }, 5000);
+        }
+        
+        function showSuccess(message) {
+            const successDiv = document.getElementById('authSuccess');
+            successDiv.textContent = message;
+            successDiv.classList.remove('hidden');
         }
     </script>
 </body>
