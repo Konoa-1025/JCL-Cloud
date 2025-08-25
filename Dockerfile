@@ -1,16 +1,22 @@
-FROM debian:stable-slim
+FROM python:3.11-slim
 
+# 必要なパッケージをインストール
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    python3 python3-pip tcc gcc timeout ca-certificates && \
-    rm -rf /var/lib/apt/lists/*
+    gcc \
+    libc6-dev \
+    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
-COPY requirements.txt .
-RUN pip3 install -r requirements.txt
-COPY app/ /app/
 
-# 非root実行
-RUN useradd -m jcl
+# Pythonの依存関係をインストール
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# アプリケーションをコピー
+COPY app/ .
+
+# 非rootユーザーを作成して実行
+RUN useradd -m jcl && chown -R jcl:jcl /app
 USER jcl
 
 EXPOSE 8080

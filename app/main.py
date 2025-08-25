@@ -32,26 +32,14 @@ def run(req: RunReq):
         exe_path = os.path.join(work, "a.out")
         open(c_path, "w").write(jcl_to_c(req.code))
 
-        # コンパイル（Windows環境ではgccまたはclangを使用）
-        # Windowsの場合、.exeを追加
-        if os.name == 'nt':
-            exe_path = exe_path + ".exe"
-            compiler_cmd = ["gcc", c_path, "-o", exe_path]
-        else:
-            compiler_cmd = ["tcc", c_path, "-o", exe_path]
-        
+        # コンパイル
+        compiler_cmd = ["gcc", c_path, "-o", exe_path]
         r = subprocess.run(compiler_cmd, capture_output=True, text=True, timeout=15)
         if r.returncode != 0:
             return {"ok": False, "stage":"compile", "stdout": r.stdout, "stderr": r.stderr}
 
         # 実行（2秒タイムアウト）
-        # WindowsとLinuxで異なるタイムアウト方法を使用
-        if os.name == 'nt':
-            # Windows環境では、subprocess.run自体のtimeoutを使用
-            r2 = subprocess.run([exe_path], capture_output=True, text=True, timeout=2)
-        else:
-            # Linux環境では、timeoutコマンドを使用
-            r2 = subprocess.run(["timeout", "2s", exe_path], capture_output=True, text=True)
+        r2 = subprocess.run([exe_path], capture_output=True, text=True, timeout=2)
         return {"ok": r2.returncode == 0, "stage":"run", "stdout": r2.stdout, "stderr": r2.stderr}
     except subprocess.TimeoutExpired:
         return {"ok": False, "stage": "run", "stdout": "", "stderr": "Execution timed out (2 seconds)"}
