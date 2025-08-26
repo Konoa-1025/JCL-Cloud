@@ -213,7 +213,10 @@ def ai_generate(req: AIRequest, current_user: str = Depends(verify_token)):
         print(f"🔑 Using OpenAI API key: {api_key[:10]}...")
         
         try:
-            client = OpenAI(api_key=api_key)
+            client = OpenAI(
+                api_key=api_key,
+                base_url="https://api.openai.com/v1"
+            )
             print("✅ OpenAI client created successfully")
         except Exception as e:
             print(f"❌ Failed to create OpenAI client: {str(e)}")
@@ -235,7 +238,7 @@ JCLの文法規則:
         
         try:
             response = client.chat.completions.create(
-                model="gpt-3.5-turbo",
+                model="gpt-4o-mini",
                 messages=[
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": req.prompt}

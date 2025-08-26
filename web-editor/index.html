@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>JCL Cloud - v2.5.1 | プロフェッショナルJCL開発環境</title>
+        <title>JCL Cloud - v2.5.2 | プロフェッショナルJCL開発環境</title>
     <style>
         * {
             margin: 0;
@@ -14,6 +14,7 @@
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background-attachment: fixed;
             min-height: 100vh;
             color: #333;
         }
@@ -243,18 +244,27 @@
         }
 
         .editor-resize-handle {
-            height: 8px;
+            height: 20px;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             cursor: ns-resize;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 12px;
+            font-size: 11px;
             color: white;
+            user-select: none;
+            border-radius: 0 0 15px 15px;
+            position: relative;
+            z-index: 10;
         }
 
         .editor-resize-handle:hover {
             background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+            height: 24px;
+        }
+
+        .editor-resize-handle:active {
+            background: linear-gradient(135deg, #4c63d2 0%, #5d3a7d 100%);
         }
 
         .ai-container {
@@ -655,7 +665,7 @@
                         
                         <!-- エディタリサイズハンドル -->
                         <div class="editor-resize-handle" onmousedown="startEditorResize(event)">
-                            ⋮⋮⋮ ドラッグして高さを調整
+                            📏 エディタの高さを調整
                         </div>
                     </div>
                     
