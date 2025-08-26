@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>JCL Cloud - v2.4.0 | プロフェッショナルJCL開発環境</title>
+        <title>JCL Cloud - v2.5.0 | プロフェッショナルJCL開発環境</title>
     <style>
         * {
             margin: 0;
@@ -153,27 +153,75 @@
             opacity: 0.9;
         }
 
-        /* 左右分割レイアウト */
+        /* メインレイアウト - エディタ中心設計 */
         .split-container {
             display: flex;
+            flex-direction: column;
             gap: 20px;
             height: calc(100vh - 200px);
             min-height: 600px;
         }
 
-        .left-panel {
+        .main-editor-area {
             flex: 1;
             display: flex;
-            flex-direction: column;
             gap: 20px;
         }
 
-        .right-panel {
-            flex: 1;
+        .editor-section {
+            flex: 3;
             display: flex;
             flex-direction: column;
             gap: 15px;
-            height: 100%;
+        }
+
+        .results-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .tools-panel {
+            background: rgba(255,255,255,0.95);
+            border-radius: 15px;
+            padding: 15px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            margin-top: 10px;
+        }
+
+        .tool-toggle-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            margin: 5px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        .tool-toggle-btn:hover {
+            background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+            transform: translateY(-2px);
+        }
+
+        .tool-toggle-btn.active {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+        }
+
+        .tool-content {
+            display: none;
+            margin-top: 15px;
+            padding: 15px;
+            background: rgba(240, 248, 255, 0.8);
+            border-radius: 10px;
+            border-left: 4px solid #667eea;
+        }
+
+        .tool-content.active {
+            display: block;
         }
         
         .editor-container {
@@ -513,7 +561,7 @@
                 このサービスは認証されたユーザーのみがアクセス可能です。<br>
                 不正アクセスや攻撃を防ぐため、承認制となっています。
                 <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #bee5eb; font-size: 0.8em; color: #0c5460;">
-                    <strong>🚀 Version 2.4.0</strong> - 田んぼレイアウト・JCLエンジンリンク版<br>
+                    <strong>🚀 Version 2.5.0</strong> - エディタ中心設計・ツール統合版<br>
                     <span style="font-size: 0.75em;">最終更新: 2025年8月26日</span>
                 </div>
                 <div style="margin-top: 15px; text-align: center;">
@@ -741,12 +789,16 @@
                 
                 try {
                     console.log('ログイン試行:', { email, password });
+                    console.log('API_URL:', API_URL);
                     
                     const response = await fetch(`${API_URL}/login`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ email, password })
                     });
+                    
+                    console.log('Response status:', response.status);
+                    console.log('Response headers:', response.headers);
                     
                     if (response.ok) {
                         const data = await response.json();
@@ -1199,6 +1251,31 @@
         // 既存のrunCode関数を置き換え
         function runCode() {
             runCodeWithInput();
+        }
+        
+        // ツール表示切り替え
+        function toggleTool(toolName) {
+            const contents = document.querySelectorAll('.tool-content');
+            const buttons = document.querySelectorAll('.tool-toggle-btn');
+            
+            // 全てのコンテンツを非表示
+            contents.forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            // 全てのボタンのアクティブ状態をリセット
+            buttons.forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // 選択されたツールを表示
+            const targetContent = document.getElementById(toolName + '-content');
+            const targetButton = event.target;
+            
+            if (targetContent) {
+                targetContent.classList.add('active');
+                targetButton.classList.add('active');
+            }
         }
     </script>
         </div>  <!-- container終了 -->

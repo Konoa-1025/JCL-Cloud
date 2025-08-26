@@ -33,6 +33,17 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 60
 WHITELIST_EMAILS = os.getenv("WHITELIST_EMAILS", "norifumi.kondo.it@gmail.com,studio.delta.tester1@gmail.com").split(",")
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "jcl2025")
 
+# 起動時のデバッグ情報
+print("🚀 JCL Cloud Authentication Server Starting...")
+print(f"📧 Whitelist emails: {WHITELIST_EMAILS}")
+print(f"🔐 Admin password set: {'Yes' if ADMIN_PASSWORD else 'No'}")
+print(f"🔑 Secret key set: {'Yes' if SECRET_KEY else 'No'}")
+print(f"🤖 OpenAI API key set: {'Yes' if os.getenv('OPENAI_API_KEY') else 'No'}")
+if os.getenv('OPENAI_API_KEY'):
+    print(f"🔑 OpenAI API key (first 10 chars): {os.getenv('OPENAI_API_KEY')[:10]}...")
+print(f"⏰ Token expire minutes: {ACCESS_TOKEN_EXPIRE_MINUTES}")
+print("=" * 50)
+
 class LoginRequest(BaseModel):
     email: str
     password: str
@@ -69,19 +80,31 @@ def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
 def login(request: LoginRequest):
     """簡易ログイン - ホワイトリストチェック + パスワード"""
     
+    print(f"🔐 Login attempt: {request.email}")
+    print(f"📋 Whitelist emails: {WHITELIST_EMAILS}")
+    print(f"🔑 Expected password length: {len(ADMIN_PASSWORD) if ADMIN_PASSWORD else 0}")
+    
     # ホワイトリストチェック
     if request.email not in WHITELIST_EMAILS:
+        print(f"❌ Email {request.email} not in whitelist")
         raise HTTPException(status_code=403, detail="アクセス許可されていないメールアドレスです")
+    
+    print(f"✅ Email {request.email} is whitelisted")
     
     # 簡易パスワードチェック
     if request.password != ADMIN_PASSWORD:
+        print(f"❌ Password mismatch for {request.email}")
         raise HTTPException(status_code=401, detail="パスワードが正しくありません")
+    
+    print(f"✅ Password correct for {request.email}")
     
     # トークン生成
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
         data={"sub": request.email}, expires_delta=access_token_expires
     )
+    
+    print(f"🎫 Token generated for {request.email}")
     
     return {
         "access_token": access_token,
@@ -160,7 +183,14 @@ def run(req: RunReq, current_user: str = Depends(verify_token)):
 
 @app.get("/")
 def health_check():
-    return {"message": "JCL Cloud API is running!", "status": "ok", "auth": "required"}
+    return {
+        "message": "JCL Cloud Authentication Server", 
+        "status": "running", 
+        "version": "2.4.0",
+        "whitelist_count": len(WHITELIST_EMAILS),
+        "password_set": bool(ADMIN_PASSWORD),
+        "timestamp": datetime.utcnow().isoformat()
+    }
 
 @app.get("/status")
 def auth_status(current_user: str = Depends(verify_token)):
