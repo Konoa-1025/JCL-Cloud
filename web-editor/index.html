@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>JCL Cloud - v2.6.4 | プロフェッショナルJCL開発環境</title>
+        <title>JCL Cloud - v2.6.5 | プロフェッショナルJCL開発環境</title>
     <style>
         * {
             margin: 0;
@@ -628,11 +628,11 @@
                 このサービスは認証されたユーザーのみがアクセス可能です。<br>
                 不正アクセスや攻撃を防ぐため、承認制となっています。
                 <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #bee5eb; font-size: 0.8em; color: #0c5460;">
-                    <strong>🚀 Version 2.6.4</strong> - AI変数名修正・完全リサイズ対応・レスポンス取得強化版<br>
+                    <strong>🚀 Version 2.6.5</strong> - OpenAI API制限対応・包括的エラーハンドリング強化版<br>
                     <div style="margin-top: 8px; font-size: 0.75em; line-height: 1.4;">
-                        ✨ <strong>新機能:</strong> AI生成コードで変数名必須アルファベット化、柔軟なレスポンス取得<br>
-                        🔧 <strong>改善:</strong> エディタリサイズ完全対応、overflow:auto修正、定期layout()実行<br>
-                        🎨 <strong>UI:</strong> リサイズ即時反映、MutationObserver強化、デバッグログ追加
+                        ✨ <strong>新機能:</strong> OpenAI 429エラー完全対応、詳細なユーザーガイダンス提供<br>
+                        🔧 <strong>改善:</strong> API制限検出強化（quota, rate_limit, 429対応）、手動代替案提示<br>
+                        🎨 <strong>UI:</strong> エラーメッセージ統一、解決方法明示、親切なガイダンス追加
                     </div>
                     <span style="font-size: 0.7em; color: #066882;">最終更新: 2025年8月26日</span>
                 </div>
@@ -1241,8 +1241,8 @@
                         setTimeout(transpileToC, 500);
                     } else {
                         const errorMsg = result.error || '生成に失敗しました';
-                        if (errorMsg.includes('insufficient_quota') || errorMsg.includes('quota')) {
-                            aiOutput.innerHTML = `⚠️ OpenAI APIの使用量制限に達しています。\n\n🔧 解決方法：\n• OpenAI APIキーの使用量制限を確認\n• 別のAPIキーを使用\n• しばらく時間をおいて再試行\n\n💡 現在はサンプルコードをご活用ください！`;
+                        if (errorMsg.includes('insufficient_quota') || errorMsg.includes('quota') || errorMsg.includes('rate_limit') || errorMsg.includes('429')) {
+                            aiOutput.innerHTML = `⚠️ OpenAI APIの使用量制限に達しています。\n\n� 解決方法：\n• OpenAIのダッシュボードで課金設定を確認\n• API使用量をチェック\n• しばらく時間をおいて再試行\n\n� 手動での代替案：\n• サンプルコードをカスタマイズ\n• 基本的なJCL文法を参考にコーディング`;
                         } else {
                             aiOutput.innerHTML = `❌ エラー: ${errorMsg}\n\n💡 サンプルコードをお試しください。`;
                         }
@@ -1250,6 +1250,10 @@
                 } else if (response.status === 401) {
                     aiOutput.innerHTML = `🔒 認証が必要です。再ログインしてください。`;
                     setTimeout(() => logout(), 2000);
+                } else if (response.status === 429) {
+                    const error = await response.json();
+                    const errorMsg = error.error || error.detail || 'API制限に達しました';
+                    aiOutput.innerHTML = `⚠️ OpenAI APIの使用量制限に達しています。\n\n💡 解決方法：\n• OpenAIのダッシュボードで課金設定を確認\n• API使用量をチェック\n• しばらく時間をおいて再試行\n\n🔧 手動での代替案：\n• サンプルコードをカスタマイズ\n• 基本的なJCL文法を参考にコーディング`;
                 } else {
                     const error = await response.json();
                     const errorMsg = error.error || error.detail || 'AI機能の呼び出しに失敗しました';
@@ -1302,19 +1306,25 @@
                         const errorMsg = result.error || '説明の生成に失敗しました';
                         console.error('AI Explain Error:', errorMsg);
                         
-                        if (errorMsg.includes('insufficient_quota') || errorMsg.includes('quota')) {
-                            aiOutput.innerHTML = `⚠️ OpenAI APIの使用量制限に達しています。\n\n💡 手動での解説：\nこのコードは主関数()から始まるJCLプログラムです。\n実行して動作を確認してみてください！`;
+                        // 429エラー（API制限）の特別処理
+                        if (errorMsg.includes('insufficient_quota') || errorMsg.includes('quota') || errorMsg.includes('429')) {
+                            aiOutput.innerHTML = `⚠️ OpenAI API使用量制限に達しています\n\n🔧 解決方法:\n• OpenAI アカウントの請求設定を確認\n• クレジットカード登録・チャージ\n• しばらく時間をおいて再試行\n\n💡 現在はサンプルコードをご活用ください！\n\n📖 手動解説:\nこのコードは主関数()から始まるJCLプログラムです。\n実行して動作を確認してみてください！`;
                         } else {
                             aiOutput.innerHTML = `❌ エラー: ${errorMsg}\n\n💡 手動解説：このコードを実行して動作を確認してみてください！`;
                         }
                     }
-                } else if (response.status === 401) {
-                    aiOutput.innerHTML = `🔒 認証が必要です。再ログインしてください。`;
-                    setTimeout(() => logout(), 2000);
                 } else {
-                    const errorText = await response.text();
-                    console.error('AI Explain HTTP Error:', response.status, errorText);
-                    aiOutput.innerHTML = `❌ サーバーエラー (${response.status}): ${errorText}\n\n💡 代替手段：実行して動作を確認してみてください！`;
+                    // HTTPエラー（429など）の処理
+                    if (response.status === 429) {
+                        aiOutput.innerHTML = `⚠️ OpenAI API使用量制限 (429)\n\n🔧 解決方法:\n• OpenAI プロジェクトの請求設定確認\n• 無料枠超過の場合はクレジット追加\n• 数分後に再試行\n\n💡 サンプルコードをお試しください！`;
+                    } else if (response.status === 401) {
+                        aiOutput.innerHTML = `🔒 認証が必要です。再ログインしてください。`;
+                        setTimeout(() => logout(), 2000);
+                    } else {
+                        const errorText = await response.text();
+                        console.error('AI Explain HTTP Error:', response.status, errorText);
+                        aiOutput.innerHTML = `❌ サーバーエラー (${response.status}): ${errorText}\n\n💡 代替手段：実行して動作を確認してみてください！`;
+                    }
                 }
             } catch (error) {
                 console.error('AI Explain Network Error:', error);
@@ -1364,8 +1374,8 @@
                         const errorMsg = result.error || '改善提案の生成に失敗しました';
                         console.error('AI Optimize Error:', errorMsg);
                         
-                        if (errorMsg.includes('insufficient_quota') || errorMsg.includes('quota')) {
-                            aiOutput.innerHTML = `⚠️ OpenAI APIの使用量制限に達しています。\n\n💡 手動でのアドバイス：\n• 変数名をわかりやすくする\n• コメントを追加する\n• 処理を関数に分ける\nなど試してみてください！`;
+                        if (errorMsg.includes('insufficient_quota') || errorMsg.includes('quota') || errorMsg.includes('rate_limit') || errorMsg.includes('429')) {
+                            aiOutput.innerHTML = `⚠️ OpenAI APIの使用量制限に達しています。\n\n💡 解決方法：\n• OpenAIのダッシュボードで課金設定を確認\n• API使用量をチェック\n• しばらく時間をおいて再試行\n\n✨ 手動でのコード改善アドバイス：\n• 変数名をわかりやすく（例：data, count, sum）\n• 適切なコメントを追加\n• 処理を関数に分割`;
                         } else {
                             aiOutput.innerHTML = `❌ エラー: ${errorMsg}\n\n💡 手動アドバイス：変数名をわかりやすくしたり、コメントを追加することをお勧めします！`;
                         }
@@ -1373,6 +1383,10 @@
                 } else if (response.status === 401) {
                     aiOutput.innerHTML = `🔒 認証が必要です。再ログインしてください。`;
                     setTimeout(() => logout(), 2000);
+                } else if (response.status === 429) {
+                    const errorText = await response.text();
+                    console.error('AI Optimize Rate Limit:', response.status, errorText);
+                    aiOutput.innerHTML = `⚠️ OpenAI APIの使用量制限に達しています。\n\n💡 解決方法：\n• OpenAIのダッシュボードで課金設定を確認\n• API使用量をチェック\n• しばらく時間をおいて再試行\n\n✨ 手動でのコード改善アドバイス：\n• 変数名をわかりやすく（例：data, count, sum）\n• 適切なコメントを追加\n• 処理を関数に分割`;
                 } else {
                     const errorText = await response.text();
                     console.error('AI Optimize HTTP Error:', response.status, errorText);
