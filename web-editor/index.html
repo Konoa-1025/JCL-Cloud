@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>JCL Cloud - v2.6.1 | プロフェッショナルJCL開発環境</title>
+        <title>JCL Cloud - v2.6.3 | プロフェッショナルJCL開発環境</title>
     <style>
         * {
             margin: 0;
@@ -413,10 +413,12 @@
             flex: 1;
             border: 1px solid #e9ecef;
             transition: all 0.3s ease;
-            resize: vertical;
-            overflow: auto;
+            resize: both;  /* 縦横両方向にリサイズ可能 */
+            overflow: hidden;  /* resizeを効かせるために必須 */
             min-height: 200px;
+            min-width: 200px;  /* 最小幅も設定 */
             position: relative;
+            background: #f8f9fa;  /* エディタ周りの背景色 */
         }
         
         .editor-wrapper .monaco-editor {
@@ -623,11 +625,11 @@
                 このサービスは認証されたユーザーのみがアクセス可能です。<br>
                 不正アクセスや攻撃を防ぐため、承認制となっています。
                 <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #bee5eb; font-size: 0.8em; color: #0c5460;">
-                    <strong>🚀 Version 2.6.1</strong> - UI改善・エディタリサイズ・トランスパイル修正版<br>
+                    <strong>🚀 Version 2.6.3</strong> - エディタリサイズ完全対応・AI機能修正版<br>
                     <div style="margin-top: 8px; font-size: 0.75em; line-height: 1.4;">
-                        ✨ <strong>新機能:</strong> エディタリサイズ機能、Tips非表示、メールアドレス表示切替<br>
-                        🔧 <strong>改善:</strong> JCL→C変換精度向上、AI機能エラーハンドリング強化<br>
-                        🎨 <strong>UI:</strong> より使いやすいインターフェース、プライバシー機能追加
+                        ✨ <strong>新機能:</strong> エディタ完全リサイズ対応（縦横両方向）、リアルタイムlayout()更新<br>
+                        🔧 <strong>改善:</strong> AI機能promptフィールド追加、ResizeObserver強化、MutationObserver監視<br>
+                        🎨 <strong>UI:</strong> ドラッグリサイズが確実に動作、エディタ表示の安定化
                     </div>
                     <span style="font-size: 0.7em; color: #066882;">最終更新: 2025年8月26日</span>
                 </div>
@@ -1058,7 +1060,7 @@
                 // テーマボタンの表示を更新
                 updateThemeButton();
                 
-                // エディタのリサイズ監視
+                // エディタのリサイズ監視を強化
                 const jclEditorElement = document.getElementById('jcl-editor');
                 const cEditorElement = document.getElementById('c-editor');
                 
@@ -1066,17 +1068,48 @@
                 if (window.ResizeObserver) {
                     const resizeObserver = new ResizeObserver(entries => {
                         for (let entry of entries) {
-                            if (entry.target === jclEditorElement && window.jclEditor) {
-                                window.jclEditor.layout();
-                            }
-                            if (entry.target === cEditorElement && window.cEditor) {
-                                window.cEditor.layout();
-                            }
+                            // デバウンス処理で頻繁な更新を防ぐ
+                            clearTimeout(window.resizeTimeout);
+                            window.resizeTimeout = setTimeout(() => {
+                                if (entry.target === jclEditorElement && window.jclEditor) {
+                                    console.log('JCL Editor リサイズ検出 - layout()実行');
+                                    window.jclEditor.layout();
+                                }
+                                if (entry.target === cEditorElement && window.cEditor) {
+                                    console.log('C Editor リサイズ検出 - layout()実行');
+                                    window.cEditor.layout();
+                                }
+                            }, 100);
                         }
                     });
                     
                     resizeObserver.observe(jclEditorElement);
                     resizeObserver.observe(cEditorElement);
+                    
+                    // 追加：ウィンドウリサイズ時もエディタを更新
+                    window.addEventListener('resize', () => {
+                        setTimeout(() => {
+                            if (window.jclEditor) window.jclEditor.layout();
+                            if (window.cEditor) window.cEditor.layout();
+                        }, 100);
+                    });
+                    
+                    // 追加：MutationObserverでstyle属性の変更も監視
+                    const mutationObserver = new MutationObserver(mutations => {
+                        mutations.forEach(mutation => {
+                            if (mutation.type === 'attributes' && mutation.attributeName === 'style') {
+                                if (mutation.target === jclEditorElement && window.jclEditor) {
+                                    setTimeout(() => window.jclEditor.layout(), 50);
+                                }
+                                if (mutation.target === cEditorElement && window.cEditor) {
+                                    setTimeout(() => window.cEditor.layout(), 50);
+                                }
+                            }
+                        });
+                    });
+                    
+                    mutationObserver.observe(jclEditorElement, { attributes: true, attributeFilter: ['style'] });
+                    mutationObserver.observe(cEditorElement, { attributes: true, attributeFilter: ['style'] });
                 }
             });
             
@@ -1241,6 +1274,7 @@
                         'Authorization': `Bearer ${token}`
                     },
                     body: JSON.stringify({ 
+                        prompt: "このJCLコードの動作を詳しく解説してください",
                         code: code
                     })
                 });
@@ -1298,6 +1332,7 @@
                         'Authorization': `Bearer ${token}`
                     },
                     body: JSON.stringify({ 
+                        prompt: "このJCLコードをより良く改善してください",
                         code: code
                     })
                 });
