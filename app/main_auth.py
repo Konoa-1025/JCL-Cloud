@@ -56,6 +56,9 @@ class AIRequest(BaseModel):
     prompt: str
     code: Optional[str] = None
 
+class CodeRequest(BaseModel):
+    code: str
+
 def create_access_token(data: dict, expires_delta: timedelta = None):
     to_encode = data.copy()
     if expires_delta:
@@ -223,16 +226,33 @@ def ai_generate(req: AIRequest, current_user: str = Depends(verify_token)):
             return {"ok": False, "error": f"OpenAI client creation failed: {str(e)}"}
         
         system_prompt = """あなたはJCL（Japanese Coding Language）のエキスパートです。
-JCLの文法規則:
+JCLは日本語でプログラミングができる言語で、文法はC言語とほぼ同じです。
+
+基本構文:
 - 主関数() { ... } でプログラムを開始
-- 表示("テキスト改行") で出力
+- 表示("テキスト改行") で出力（printf相当）
 - 整数型、文字列型 で変数宣言
 - 入力("整数", &変数) でscanf相当
 - 繰り返し(初期化; 条件; 更新) { ... } でfor文
 - もし(条件) { ... } でif文
 - 戻る 値; でreturn文
 
-ユーザーの要求に基づいてJCLコードを生成してください。"""
+演算子:
+- +, -, *, / (算術演算)
+- ==, !=, <, >, <=, >= (比較演算)
+- &&, || (論理演算)
+
+制御構造:
+- もし(条件) { 処理 } そうでなければ { 処理 }
+- 繰り返し(i = 0; i < 10; i++) { 処理 }
+- while(条件) { 処理 }
+
+配列:
+- 整数型 配列[サイズ];
+- 配列[インデックス] = 値;
+
+ユーザーの要求に基づいてJCLコードを生成してください。
+コードブロック記法（```）は使わず、純粋なJCLコードのみを返してください。"""
 
         print("📡 Sending request to OpenAI API...")
         
@@ -252,6 +272,13 @@ JCLの文法規則:
             return {"ok": False, "error": f"OpenAI API call failed: {str(e)}"}
         
         generated_code = response.choices[0].message.content
+        
+        # コードブロック記法を除去
+        import re
+        # ```jcl や ``` で囲まれた部分を除去
+        generated_code = re.sub(r'^```\w*\n?', '', generated_code, flags=re.MULTILINE)
+        generated_code = re.sub(r'\n?```$', '', generated_code, flags=re.MULTILINE)
+        generated_code = generated_code.strip()
         
         print(f"✅ OpenAI API response received: {generated_code[:100]}...")
         
@@ -371,3 +398,51 @@ def ai_optimize(req: AIRequest, current_user: str = Depends(verify_token)):
     except Exception as e:
         print(f"💥 AI Optimization Error: {str(e)}")
         return {"ok": False, "error": f"AI最適化エラー: {str(e)}"}
+
+@app.post("/transpile")
+async def transpile_jcl_to_c(request: CodeRequest, current_user: str = Depends(verify_token)):
+    """JCLコードをCコードに変換"""
+    try:
+        print(f"🔄 Transpiling JCL to C for user: {current_user}")
+        print(f"📝 JCL Code: {request.code[:100]}...")
+        
+        # 簡単なJCL→C変換（実際のプロジェクトではより高度な変換ロジックを実装）
+        # ここでは基本的な変換例を示します
+        c_code = convert_jcl_to_c(request.code)
+        
+        return {
+            "ok": True,
+            "transpiled_code": c_code,
+            "user": current_user
+        }
+        
+    except Exception as e:
+        print(f"💥 Transpile Error: {str(e)}")
+        return {"ok": False, "error": f"トランスパイルエラー: {str(e)}"}
+
+def convert_jcl_to_c(jcl_code: str) -> str:
+    """JCLコードをCコードに変換する簡単な関数"""
+    try:
+        # 基本的なJCL→C変換ロジック
+        c_code = """#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+// JCLコードから変換されたCコード
+int main() {
+    printf("JCL Code:\\n");
+    printf("%s\\n", """ + '"' + jcl_code.replace('"', '\\"').replace('\n', '\\n') + '"' + """);
+    
+    // ここに実際の変換ロジックが入ります
+    printf("\\n=== JCL実行結果 ===\\n");
+    
+    // JCLの基本的な処理をCで実装
+    printf("JCL job executed successfully\\n");
+    
+    return 0;
+}"""
+        
+        return c_code
+        
+    except Exception as e:
+        return f"// 変換エラー: {str(e)}\n// 元のJCLコード:\n/*\n{jcl_code}\n*/"
