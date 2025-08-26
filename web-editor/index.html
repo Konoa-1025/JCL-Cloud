@@ -682,7 +682,7 @@
                                 <!-- 入力データ設定 -->
                                 <div style="margin-left: 20px; display: inline-flex; align-items: center; gap: 10px;">
                                     <label style="font-size: 0.9em; color: #666;">📥 入力データ:</label>
-                                    <button class="btn btn-secondary" onclick="toggleInputValues()" style="padding: 5px 10px; font-size: 0.8em;">
+                                    <button class="btn btn-secondary" onclick="toggleInputPanel()" style="padding: 5px 10px; font-size: 0.8em;">
                                         ⚙️ 設定
                                     </button>
                                 </div>
@@ -852,7 +852,7 @@
             document.getElementById('userEmail').textContent = userInfo;
             
             // エディタを初期化（まだ初期化されていない場合）
-            if (!editor) {
+            if (!window.jclEditor) {
                 initializeEditor();
             }
         }
@@ -924,11 +924,11 @@
             showAuthScreen();
             
             // エディタをリセット
-            if (jclEditor) {
-                jclEditor.setValue('');
+            if (window.jclEditor) {
+                window.jclEditor.setValue('');
             }
-            if (cEditor) {
-                cEditor.setValue('// JCL→C変換結果がここに表示されます');
+            if (window.cEditor) {
+                window.cEditor.setValue('// JCL→C変換結果がここに表示されます');
             }
             document.getElementById('output').innerHTML = 'ログアウトしました。';
         }
@@ -978,7 +978,7 @@
             require.config({ paths: { 'vs': 'https://unpkg.com/monaco-editor@0.45.0/min/vs' }});
             require(['vs/editor/editor.main'], function () {
                 // JCLエディタ
-                jclEditor = monaco.editor.create(document.getElementById('jcl-editor'), {
+                window.jclEditor = monaco.editor.create(document.getElementById('jcl-editor'), {
                     value: samples.hello,
                     language: 'c',
                     theme: 'vs-dark',
@@ -991,7 +991,7 @@
                 });
                 
                 // Cエディタ（読み取り専用）
-                cEditor = monaco.editor.create(document.getElementById('c-editor'), {
+                window.cEditor = monaco.editor.create(document.getElementById('c-editor'), {
                     value: '// JCL→C変換結果がここに表示されます',
                     language: 'c',
                     theme: 'vs-light',
@@ -1004,7 +1004,7 @@
                 });
                 
                 // Ctrl+Enter で実行
-                jclEditor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, function() {
+                window.jclEditor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, function() {
                     runCode();
                 });
             });
@@ -1015,8 +1015,8 @@
         
         // サンプル読み込み関数
         function loadSample(sampleName) {
-            if (window.samples && window.samples[sampleName] && jclEditor) {
-                jclEditor.setValue(window.samples[sampleName]);
+            if (window.samples && window.samples[sampleName] && window.jclEditor) {
+                window.jclEditor.setValue(window.samples[sampleName]);
                 document.getElementById('output').innerHTML = `📝 "${sampleName}" サンプルを読み込みました。「実行する」ボタンを押してみてください！`;
                 // 自動的にトランスパイル
                 setTimeout(transpileToC, 500);
@@ -1032,16 +1032,29 @@
                 return;
             }
             
-            const code = jclEditor.getValue();
+            if (!window.jclEditor) {
+                alert('エディタが初期化されていません。');
+                return;
+            }
+            
+            const code = window.jclEditor.getValue();
+            if (!code.trim()) {
+                alert('コードを入力してください。');
+                return;
+            }
+            
             const inputValues = document.getElementById('inputValues').value;
             const outputDiv = document.getElementById('output');
             
             outputDiv.innerHTML = '⏳ 実行中...';
             
+            // 実行前に自動的にJCL→C変換を実行
+            await transpileToC();
+            
             try {
                 const requestBody = { 
                     code: code,
-                    input_data: inputValues.trim() || null  // 入力データを含める
+                    input_data: inputValues.trim() ? inputValues.split('\n').filter(line => line.trim() !== '') : null
                 };
                 
                 const response = await fetch(`${API_URL}/run`, {
@@ -1111,7 +1124,7 @@
                 if (response.ok) {
                     const result = await response.json();
                     if (result.ok && result.code) {
-                        jclEditor.setValue(result.code);
+                        window.jclEditor.setValue(result.code);
                         aiOutput.innerHTML = `✨ コードを生成しました！エディタに挿入済みです。\n\n📝 生成されたコード:\n${result.code}\n\n💡 「実行する」ボタンで動作確認してみてください！`;
                         document.getElementById('aiPrompt').value = '';
                         // 自動的にトランスパイル
@@ -1135,7 +1148,7 @@
         
         // コード説明
         async function explainCode() {
-            const code = jclEditor.getValue();
+            const code = window.jclEditor.getValue();
             if (!code.trim()) {
                 document.getElementById('aiOutput').innerHTML = '❌ 説明するコードがありません。まずコードを書いてください。';
                 return;
@@ -1180,7 +1193,7 @@
         
         // コード改善
         async function optimizeCode() {
-            const code = jclEditor.getValue();
+            const code = window.jclEditor.getValue();
             if (!code.trim()) {
                 document.getElementById('aiOutput').innerHTML = '❌ 改善するコードがありません。まずコードを書いてください。';
                 return;
@@ -1225,12 +1238,12 @@
         
         // エディタクリア
         function clearEditor() {
-            if (jclEditor) {
-                jclEditor.setValue('');
+            if (window.jclEditor) {
+                window.jclEditor.setValue('');
                 document.getElementById('output').innerHTML = 'エディタをクリアしました。新しいコードを書いてみてください！';
             }
-            if (cEditor) {
-                cEditor.setValue('// JCL→C変換結果がここに表示されます');
+            if (window.cEditor) {
+                window.cEditor.setValue('// JCL→C変換結果がここに表示されます');
             }
         }
         
@@ -1302,12 +1315,12 @@
 
         // 実行時にscanf対応 - テキストエリアから入力値を取得
         async function runCodeWithInput() {
-            if (!jclEditor) {
+            if (!window.jclEditor) {
                 document.getElementById('output').innerHTML = '❌ エディタが初期化されていません';
                 return;
             }
 
-            const code = jclEditor.getValue();
+            const code = window.jclEditor.getValue();
             if (!code.trim()) {
                 document.getElementById('output').innerHTML = '❌ コードを入力してください';
                 return;
@@ -1399,7 +1412,13 @@
         function startEditorResize(e) {
             isResizing = true;
             startY = e.clientY;
-            startHeight = parseInt(document.defaultView.getComputedStyle(document.getElementById('editor')).height, 10);
+            
+            // 現在アクティブなエディタを取得
+            const jclEditor = document.getElementById('jcl-editor');
+            const cEditor = document.getElementById('c-editor');
+            const activeEditor = jclEditor.style.display !== 'none' ? jclEditor : cEditor;
+            
+            startHeight = parseInt(document.defaultView.getComputedStyle(activeEditor).height, 10);
             document.addEventListener('mousemove', doEditorResize);
             document.addEventListener('mouseup', stopEditorResize);
             e.preventDefault();
@@ -1409,10 +1428,18 @@
             if (!isResizing) return;
             const newHeight = startHeight + e.clientY - startY;
             if (newHeight >= 300) { // 最小高さ300px
-                document.getElementById('editor').style.height = newHeight + 'px';
+                const jclEditor = document.getElementById('jcl-editor');
+                const cEditor = document.getElementById('c-editor');
+                
+                jclEditor.style.height = newHeight + 'px';
+                cEditor.style.height = newHeight + 'px';
+                
                 // Monaco Editorのサイズも更新
-                if (editor) {
-                    editor.layout();
+                if (window.jclEditor) {
+                    window.jclEditor.layout();
+                }
+                if (window.cEditor) {
+                    window.cEditor.layout();
                 }
             }
         }
@@ -1441,6 +1468,16 @@
                 jclEditor.style.display = 'none';
                 cEditor.style.display = 'block';
             }
+            
+            // Monaco Editorのレイアウト更新
+            setTimeout(() => {
+                if (window.jclEditor && tabName === 'jcl') {
+                    window.jclEditor.layout();
+                }
+                if (window.cEditor && tabName === 'c') {
+                    window.cEditor.layout();
+                }
+            }, 100);
         }
         
         // JCL→C変換機能
