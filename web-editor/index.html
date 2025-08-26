@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>JCL Cloud - v2.6.6 | プロフェッショナルJCL開発環境</title>
+    <title>JCL Cloud - v2.6.7 | プロフェッショナルJCL開発環境</title>
     <style>
         * {
             margin: 0;
@@ -431,17 +431,19 @@
         .editor-wrapper {
             flex: 1;
             border: 1px solid #e9ecef;
-            transition: all 0.3s ease;
+            transition: none; /* リサイズ時のアニメーション無効化 */
             resize: vertical;  /* 縦方向リサイズを優先 */
             overflow: auto;  /* resizeを効かせるために必須 */
             min-height: 200px;
-            max-height: 800px;  /* 最大高さ制限 */
+            max-height: none;  /* 最大高さ制限撤廃 */
             min-width: 200px;  /* 最小幅も設定 */
             position: relative;
             background: #f8f9fa;  /* エディタ周りの背景色 */
             /* flexbox縮小を許可（重要！） */
             min-inline-size: 0;
             min-block-size: 0;
+            /* ブラウザ最適化 */
+            contain: layout style;
         }
         
         .editor-wrapper .monaco-editor {
@@ -648,11 +650,11 @@
                 このサービスは認証されたユーザーのみがアクセス可能です。<br>
                 不正アクセスや攻撃を防ぐため、承認制となっています。
                 <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #bee5eb; font-size: 0.8em; color: #0c5460;">
-                    <strong>🚀 Version 2.6.6</strong> - 縦方向リサイズ対応・レイアウト最適化版<br>
+                    <strong>🚀 Version 2.6.7</strong> - OpenAI API エラーハンドリング強化・エディタリサイズ最適化版<br>
                     <div style="margin-top: 8px; font-size: 0.75em; line-height: 1.4;">
-                        ✨ <strong>新機能:</strong> エディタ縦方向リサイズ優先対応、親コンテナ連動リサイズ<br>
-                        🔧 <strong>改善:</strong> レイアウト構造最適化、OpenAI APIエラーメッセージ詳細化<br>
-                        🎨 <strong>UI:</strong> flexboxレイアウト改善、縦リサイズ優先設計、高さ制限撤廃
+                        ✨ <strong>新機能:</strong> OpenAI 429エラー詳細ガイド、AI機能連打防止、リサイズ性能最適化<br>
+                        🔧 <strong>改善:</strong> エディタ縦リサイズ応答性向上、デバウンス処理追加、フォールバック頻度調整<br>
+                        🎨 <strong>UI:</strong> エラーメッセージ詳細化、課金設定ガイド追加、リサイズアニメーション無効化
                     </div>
                     <span style="font-size: 0.7em; color: #066882;">最終更新: 2025年8月26日</span>
                 </div>
@@ -1086,46 +1088,64 @@
                 // テーマボタンの表示を更新
                 updateThemeButton();
                 
-                // エディタのリサイズ監視を強化
+                // エディタのリサイズ監視を強化（最適化版）
                 const jclEditorElement = document.getElementById('jcl-editor');
                 const cEditorElement = document.getElementById('c-editor');
                 
-                // ResizeObserverでエディタコンテナのサイズ変更を監視（強化版）
+                // 即座にレスポンシブResizeObserverでエディタコンテナのサイズ変更を監視
                 if (window.ResizeObserver) {
+                    let resizeTimeout;
                     const resizeObserver = new ResizeObserver(entries => {
-                        for (let entry of entries) {
-                            // すぐに layout() を実行（デバウンスなし）
-                            if (entry.target === jclEditorElement && window.jclEditor) {
-                                console.log('JCL Editor リサイズ検出 - layout()実行');
-                                window.jclEditor.layout();
+                        // デバウンス処理で過度な呼び出しを防ぐ
+                        clearTimeout(resizeTimeout);
+                        resizeTimeout = setTimeout(() => {
+                            for (let entry of entries) {
+                                const { width, height } = entry.contentRect;
+                                
+                                if (entry.target === jclEditorElement && window.jclEditor && currentTab === 'jcl') {
+                                    console.log(`JCL Editor リサイズ: ${width}x${height}`);
+                                    window.jclEditor.layout({ width, height });
+                                }
+                                if (entry.target === cEditorElement && window.cEditor && currentTab === 'c') {
+                                    console.log(`C Editor リサイズ: ${width}x${height}`);
+                                    window.cEditor.layout({ width, height });
+                                }
                             }
-                            if (entry.target === cEditorElement && window.cEditor) {
-                                console.log('C Editor リサイズ検出 - layout()実行');
-                                window.cEditor.layout();
-                            }
-                        }
+                        }, 50); // 50ms デバウンス
                     });
                     
                     resizeObserver.observe(jclEditorElement);
                     resizeObserver.observe(cEditorElement);
                     
-                    // ウィンドウリサイズ時もエディタを更新
+                    // ウィンドウリサイズ時も最適化
+                    let windowResizeTimeout;
                     window.addEventListener('resize', () => {
-                        if (window.jclEditor) window.jclEditor.layout();
-                        if (window.cEditor) window.cEditor.layout();
+                        clearTimeout(windowResizeTimeout);
+                        windowResizeTimeout = setTimeout(() => {
+                            if (window.jclEditor && currentTab === 'jcl') window.jclEditor.layout();
+                            if (window.cEditor && currentTab === 'c') window.cEditor.layout();
+                        }, 100);
                     });
                     
-                    // MutationObserverでstyle属性の変更も監視
+                    // MutationObserverで直接的なサイズ変更も監視（軽量化）
                     const mutationObserver = new MutationObserver(mutations => {
                         mutations.forEach(mutation => {
                             if (mutation.type === 'attributes' && mutation.attributeName === 'style') {
-                                if (mutation.target === jclEditorElement && window.jclEditor) {
-                                    console.log('JCL Editor style変更検出 - layout()実行');
-                                    window.jclEditor.layout();
-                                }
-                                if (mutation.target === cEditorElement && window.cEditor) {
-                                    console.log('C Editor style変更検出 - layout()実行');
-                                    window.cEditor.layout();
+                                const target = mutation.target;
+                                if ((target === jclEditorElement || target === cEditorElement) && 
+                                    (target.style.height || target.style.width)) {
+                                    
+                                    clearTimeout(resizeTimeout);
+                                    resizeTimeout = setTimeout(() => {
+                                        if (target === jclEditorElement && window.jclEditor && currentTab === 'jcl') {
+                                            console.log('JCL Editor style変更検出');
+                                            window.jclEditor.layout();
+                                        }
+                                        if (target === cEditorElement && window.cEditor && currentTab === 'c') {
+                                            console.log('C Editor style変更検出');
+                                            window.cEditor.layout();
+                                        }
+                                    }, 100);
                                 }
                             }
                         });
@@ -1134,11 +1154,11 @@
                     mutationObserver.observe(jclEditorElement, { attributes: true, attributeFilter: ['style'] });
                     mutationObserver.observe(cEditorElement, { attributes: true, attributeFilter: ['style'] });
                     
-                    // 定期的にlayout()を実行（フォールバック）
+                    // フォールバック：定期的なlayout実行は頻度を下げる
                     setInterval(() => {
                         if (window.jclEditor && currentTab === 'jcl') window.jclEditor.layout();
                         if (window.cEditor && currentTab === 'c') window.cEditor.layout();
-                    }, 2000);
+                    }, 5000); // 5秒に1回
                 }
             });
             
