@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>JCL Cloud - v2.6.3 | プロフェッショナルJCL開発環境</title>
+        <title>JCL Cloud - v2.6.4 | プロフェッショナルJCL開発環境</title>
     <style>
         * {
             margin: 0;
@@ -414,11 +414,14 @@
             border: 1px solid #e9ecef;
             transition: all 0.3s ease;
             resize: both;  /* 縦横両方向にリサイズ可能 */
-            overflow: hidden;  /* resizeを効かせるために必須 */
+            overflow: auto;  /* resizeを効かせるために必須 */
             min-height: 200px;
             min-width: 200px;  /* 最小幅も設定 */
             position: relative;
             background: #f8f9fa;  /* エディタ周りの背景色 */
+            /* flexbox縮小を許可（重要！） */
+            min-inline-size: 0;
+            min-block-size: 0;
         }
         
         .editor-wrapper .monaco-editor {
@@ -625,11 +628,11 @@
                 このサービスは認証されたユーザーのみがアクセス可能です。<br>
                 不正アクセスや攻撃を防ぐため、承認制となっています。
                 <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #bee5eb; font-size: 0.8em; color: #0c5460;">
-                    <strong>🚀 Version 2.6.3</strong> - エディタリサイズ完全対応・AI機能修正版<br>
+                    <strong>🚀 Version 2.6.4</strong> - AI変数名修正・完全リサイズ対応・レスポンス取得強化版<br>
                     <div style="margin-top: 8px; font-size: 0.75em; line-height: 1.4;">
-                        ✨ <strong>新機能:</strong> エディタ完全リサイズ対応（縦横両方向）、リアルタイムlayout()更新<br>
-                        🔧 <strong>改善:</strong> AI機能promptフィールド追加、ResizeObserver強化、MutationObserver監視<br>
-                        🎨 <strong>UI:</strong> ドラッグリサイズが確実に動作、エディタ表示の安定化
+                        ✨ <strong>新機能:</strong> AI生成コードで変数名必須アルファベット化、柔軟なレスポンス取得<br>
+                        🔧 <strong>改善:</strong> エディタリサイズ完全対応、overflow:auto修正、定期layout()実行<br>
+                        🎨 <strong>UI:</strong> リサイズ即時反映、MutationObserver強化、デバッグログ追加
                     </div>
                     <span style="font-size: 0.7em; color: #066882;">最終更新: 2025年8月26日</span>
                 </div>
@@ -705,8 +708,8 @@
                             </div>
                         </div>
                         
-                        <div class="editor-wrapper" id="jcl-editor" style="height: 400px; min-height: 300px; resize: vertical; overflow: auto; display: block;"></div>
-                        <div class="editor-wrapper" id="c-editor" style="height: 400px; min-height: 300px; resize: vertical; overflow: auto; display: none;"></div>
+                        <div class="editor-wrapper" id="jcl-editor" style="height: 400px; min-height: 300px; display: block;"></div>
+                        <div class="editor-wrapper" id="c-editor" style="height: 400px; min-height: 300px; display: none;"></div>
                         
                         <!-- エディタTIP表示 -->
                         <div id="editorTips" style="background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%); padding: 8px 15px; font-size: 0.85em; color: #1565c0; border-radius: 0 0 15px 15px; display: flex; align-items: center; gap: 8px; justify-content: space-between;">
@@ -1064,45 +1067,42 @@
                 const jclEditorElement = document.getElementById('jcl-editor');
                 const cEditorElement = document.getElementById('c-editor');
                 
-                // ResizeObserverでエディタコンテナのサイズ変更を監視
+                // ResizeObserverでエディタコンテナのサイズ変更を監視（強化版）
                 if (window.ResizeObserver) {
                     const resizeObserver = new ResizeObserver(entries => {
                         for (let entry of entries) {
-                            // デバウンス処理で頻繁な更新を防ぐ
-                            clearTimeout(window.resizeTimeout);
-                            window.resizeTimeout = setTimeout(() => {
-                                if (entry.target === jclEditorElement && window.jclEditor) {
-                                    console.log('JCL Editor リサイズ検出 - layout()実行');
-                                    window.jclEditor.layout();
-                                }
-                                if (entry.target === cEditorElement && window.cEditor) {
-                                    console.log('C Editor リサイズ検出 - layout()実行');
-                                    window.cEditor.layout();
-                                }
-                            }, 100);
+                            // すぐに layout() を実行（デバウンスなし）
+                            if (entry.target === jclEditorElement && window.jclEditor) {
+                                console.log('JCL Editor リサイズ検出 - layout()実行');
+                                window.jclEditor.layout();
+                            }
+                            if (entry.target === cEditorElement && window.cEditor) {
+                                console.log('C Editor リサイズ検出 - layout()実行');
+                                window.cEditor.layout();
+                            }
                         }
                     });
                     
                     resizeObserver.observe(jclEditorElement);
                     resizeObserver.observe(cEditorElement);
                     
-                    // 追加：ウィンドウリサイズ時もエディタを更新
+                    // ウィンドウリサイズ時もエディタを更新
                     window.addEventListener('resize', () => {
-                        setTimeout(() => {
-                            if (window.jclEditor) window.jclEditor.layout();
-                            if (window.cEditor) window.cEditor.layout();
-                        }, 100);
+                        if (window.jclEditor) window.jclEditor.layout();
+                        if (window.cEditor) window.cEditor.layout();
                     });
                     
-                    // 追加：MutationObserverでstyle属性の変更も監視
+                    // MutationObserverでstyle属性の変更も監視
                     const mutationObserver = new MutationObserver(mutations => {
                         mutations.forEach(mutation => {
                             if (mutation.type === 'attributes' && mutation.attributeName === 'style') {
                                 if (mutation.target === jclEditorElement && window.jclEditor) {
-                                    setTimeout(() => window.jclEditor.layout(), 50);
+                                    console.log('JCL Editor style変更検出 - layout()実行');
+                                    window.jclEditor.layout();
                                 }
                                 if (mutation.target === cEditorElement && window.cEditor) {
-                                    setTimeout(() => window.cEditor.layout(), 50);
+                                    console.log('C Editor style変更検出 - layout()実行');
+                                    window.cEditor.layout();
                                 }
                             }
                         });
@@ -1110,6 +1110,12 @@
                     
                     mutationObserver.observe(jclEditorElement, { attributes: true, attributeFilter: ['style'] });
                     mutationObserver.observe(cEditorElement, { attributes: true, attributeFilter: ['style'] });
+                    
+                    // 定期的にlayout()を実行（フォールバック）
+                    setInterval(() => {
+                        if (window.jclEditor && currentTab === 'jcl') window.jclEditor.layout();
+                        if (window.cEditor && currentTab === 'c') window.cEditor.layout();
+                    }, 2000);
                 }
             });
             
@@ -1221,7 +1227,7 @@
                         'Authorization': `Bearer ${token}`
                     },
                     body: JSON.stringify({ 
-                        prompt: prompt
+                        prompt: prompt + "\n\n【重要】変数名は必ずアルファベット（a, b, count, sum等）を使用してください。日本語の変数名は避けてください。"
                     })
                 });
                 
@@ -1274,7 +1280,7 @@
                         'Authorization': `Bearer ${token}`
                     },
                     body: JSON.stringify({ 
-                        prompt: "このJCLコードの動作を詳しく解説してください",
+                        prompt: "このJCLコードの動作を詳しく解説してください。変数名はアルファベットで表記されている前提で説明してください。",
                         code: code
                     })
                 });
@@ -1286,9 +1292,13 @@
                     const result = await response.json();
                     console.log('AI Explain Result:', result);
                     
-                    if (result.ok && result.explanation) {
-                        aiOutput.innerHTML = `💡 コード解説:\n\n${result.explanation}`;
+                    // レスポンスから説明テキストを柔軟に取得
+                    const explanation = result.explanation || result.content || result.choices?.[0]?.message?.content || result.output_text || result.result;
+                    
+                    if (result.ok && explanation) {
+                        aiOutput.innerHTML = `💡 コード解説:\n\n${explanation}`;
                     } else {
+                        console.log('AI Explain RAW Response:', result);
                         const errorMsg = result.error || '説明の生成に失敗しました';
                         console.error('AI Explain Error:', errorMsg);
                         
@@ -1332,7 +1342,7 @@
                         'Authorization': `Bearer ${token}`
                     },
                     body: JSON.stringify({ 
-                        prompt: "このJCLコードをより良く改善してください",
+                        prompt: "このJCLコードをより良く改善してください。【重要】変数名は必ずアルファベット（a, b, count, sum等）を使用し、日本語の変数名は避けてください。",
                         code: code
                     })
                 });
@@ -1344,9 +1354,13 @@
                     const result = await response.json();
                     console.log('AI Optimize Result:', result);
                     
-                    if (result.ok && result.optimization) {
-                        aiOutput.innerHTML = `⚡ コード改善提案:\n\n${result.optimization}`;
+                    // レスポンスから改善提案を柔軟に取得
+                    const optimization = result.optimization || result.optimized_code || result.content || result.choices?.[0]?.message?.content || result.output_text || result.result;
+                    
+                    if (result.ok && optimization) {
+                        aiOutput.innerHTML = `⚡ コード改善提案:\n\n${optimization}`;
                     } else {
+                        console.log('AI Optimize RAW Response:', result);
                         const errorMsg = result.error || '改善提案の生成に失敗しました';
                         console.error('AI Optimize Error:', errorMsg);
                         
