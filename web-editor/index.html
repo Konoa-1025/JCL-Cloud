@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>JCL Cloud - v2.6.7 | プロフェッショナルJCL開発環境</title>
+    <title>JCL Cloud - v2.6.8 | プロフェッショナルJCL開発環境</title>
     <style>
         * {
             margin: 0;
@@ -176,6 +176,8 @@
             flex-direction: column;
             gap: 20px;
             min-height: 0;  /* flexbox縮小を許可 */
+            /* 子要素のリサイズに即座に追従 */
+            align-items: stretch; /* 子要素を横幅いっぱいに */
         }
 
         .right-panel {
@@ -250,9 +252,12 @@
             flex: 1;
             display: flex;
             flex-direction: column;
-            min-height: 300px;
+            min-height: 400px; /* 初期高さを大きめに */
             resize: vertical;  /* 親コンテナも縦方向リサイズ可能 */
             overflow-y: auto;  /* 縦方向リサイズに必要 */
+            /* 高速レスポンス用最適化 */
+            will-change: height;
+            contain: layout size;
         }
 
         .ai-container {
@@ -431,19 +436,20 @@
         .editor-wrapper {
             flex: 1;
             border: 1px solid #e9ecef;
-            transition: none; /* リサイズ時のアニメーション無効化 */
             resize: vertical;  /* 縦方向リサイズを優先 */
             overflow: auto;  /* resizeを効かせるために必須 */
-            min-height: 200px;
+            min-height: 300px; /* 大きめの最小高さ */
             max-height: none;  /* 最大高さ制限撤廃 */
-            min-width: 200px;  /* 最小幅も設定 */
             position: relative;
             background: #f8f9fa;  /* エディタ周りの背景色 */
-            /* flexbox縮小を許可（重要！） */
-            min-inline-size: 0;
-            min-block-size: 0;
-            /* ブラウザ最適化 */
-            contain: layout style;
+            /* 親子連動の最適化 */
+            height: 100%; /* 親に完全追従 */
+            /* 高速レスポンス用最適化 */
+            will-change: height;
+            contain: layout;
+            /* アニメーション完全無効化 */
+            transition: none !important;
+            transform: translateZ(0); /* GPU加速 */
         }
         
         .editor-wrapper .monaco-editor {
@@ -650,11 +656,11 @@
                 このサービスは認証されたユーザーのみがアクセス可能です。<br>
                 不正アクセスや攻撃を防ぐため、承認制となっています。
                 <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #bee5eb; font-size: 0.8em; color: #0c5460;">
-                    <strong>🚀 Version 2.6.7</strong> - OpenAI API エラーハンドリング強化・エディタリサイズ最適化版<br>
+                    <strong>🚀 Version 2.6.8</strong> - エディタ縦リサイズ超高速レスポンス版<br>
                     <div style="margin-top: 8px; font-size: 0.75em; line-height: 1.4;">
-                        ✨ <strong>新機能:</strong> OpenAI 429エラー詳細ガイド、AI機能連打防止、リサイズ性能最適化<br>
-                        🔧 <strong>改善:</strong> エディタ縦リサイズ応答性向上、デバウンス処理追加、フォールバック頻度調整<br>
-                        🎨 <strong>UI:</strong> エラーメッセージ詳細化、課金設定ガイド追加、リサイズアニメーション無効化
+                        ⚡ <strong>新機能:</strong> エディタリサイズ即座対応（10ms）、親子連動最適化、GPU加速<br>
+                        🔧 <strong>改善:</strong> will-change・contain最適化、デバウンス時間短縮、高頻度レイアウト更新<br>
+                        🎨 <strong>UI:</strong> リサイズハンドル高速化、親要素高さ追従、レスポンス性向上
                     </div>
                     <span style="font-size: 0.7em; color: #066882;">最終更新: 2025年8月26日</span>
                 </div>
@@ -1088,46 +1094,47 @@
                 // テーマボタンの表示を更新
                 updateThemeButton();
                 
-                // エディタのリサイズ監視を強化（最適化版）
+                // エディタのリサイズ監視を超高速化
                 const jclEditorElement = document.getElementById('jcl-editor');
                 const cEditorElement = document.getElementById('c-editor');
                 
                 // 即座にレスポンシブResizeObserverでエディタコンテナのサイズ変更を監視
                 if (window.ResizeObserver) {
+                    // デバウンス時間を短縮
                     let resizeTimeout;
                     const resizeObserver = new ResizeObserver(entries => {
-                        // デバウンス処理で過度な呼び出しを防ぐ
+                        // デバウンスをほぼゼロに
                         clearTimeout(resizeTimeout);
                         resizeTimeout = setTimeout(() => {
                             for (let entry of entries) {
                                 const { width, height } = entry.contentRect;
                                 
                                 if (entry.target === jclEditorElement && window.jclEditor && currentTab === 'jcl') {
-                                    console.log(`JCL Editor リサイズ: ${width}x${height}`);
+                                    console.log(`JCL Editor 即座リサイズ: ${width}x${height}`);
                                     window.jclEditor.layout({ width, height });
                                 }
                                 if (entry.target === cEditorElement && window.cEditor && currentTab === 'c') {
-                                    console.log(`C Editor リサイズ: ${width}x${height}`);
+                                    console.log(`C Editor 即座リサイズ: ${width}x${height}`);
                                     window.cEditor.layout({ width, height });
                                 }
                             }
-                        }, 50); // 50ms デバウンス
+                        }, 10); // 10ms デバウンス（超高速）
                     });
                     
                     resizeObserver.observe(jclEditorElement);
                     resizeObserver.observe(cEditorElement);
                     
-                    // ウィンドウリサイズ時も最適化
+                    // ウィンドウリサイズ時も即座に対応
                     let windowResizeTimeout;
                     window.addEventListener('resize', () => {
                         clearTimeout(windowResizeTimeout);
                         windowResizeTimeout = setTimeout(() => {
                             if (window.jclEditor && currentTab === 'jcl') window.jclEditor.layout();
                             if (window.cEditor && currentTab === 'c') window.cEditor.layout();
-                        }, 100);
+                        }, 5); // 5ms で即座対応
                     });
                     
-                    // MutationObserverで直接的なサイズ変更も監視（軽量化）
+                    // MutationObserverで直接的なサイズ変更も超高速監視
                     const mutationObserver = new MutationObserver(mutations => {
                         mutations.forEach(mutation => {
                             if (mutation.type === 'attributes' && mutation.attributeName === 'style') {
@@ -1135,17 +1142,15 @@
                                 if ((target === jclEditorElement || target === cEditorElement) && 
                                     (target.style.height || target.style.width)) {
                                     
-                                    clearTimeout(resizeTimeout);
-                                    resizeTimeout = setTimeout(() => {
-                                        if (target === jclEditorElement && window.jclEditor && currentTab === 'jcl') {
-                                            console.log('JCL Editor style変更検出');
-                                            window.jclEditor.layout();
-                                        }
-                                        if (target === cEditorElement && window.cEditor && currentTab === 'c') {
-                                            console.log('C Editor style変更検出');
-                                            window.cEditor.layout();
-                                        }
-                                    }, 100);
+                                    // 即座実行（デバウンスなし）
+                                    if (target === jclEditorElement && window.jclEditor && currentTab === 'jcl') {
+                                        console.log('JCL Editor style即座変更検出');
+                                        window.jclEditor.layout();
+                                    }
+                                    if (target === cEditorElement && window.cEditor && currentTab === 'c') {
+                                        console.log('C Editor style即座変更検出');
+                                        window.cEditor.layout();
+                                    }
                                 }
                             }
                         });
@@ -1154,11 +1159,11 @@
                     mutationObserver.observe(jclEditorElement, { attributes: true, attributeFilter: ['style'] });
                     mutationObserver.observe(cEditorElement, { attributes: true, attributeFilter: ['style'] });
                     
-                    // フォールバック：定期的なlayout実行は頻度を下げる
+                    // フォールバック：定期的なlayout実行は頻度を上げる
                     setInterval(() => {
                         if (window.jclEditor && currentTab === 'jcl') window.jclEditor.layout();
                         if (window.cEditor && currentTab === 'c') window.cEditor.layout();
-                    }, 5000); // 5秒に1回
+                    }, 1000); // 1秒に1回（高頻度）
                 }
             });
             
@@ -1665,7 +1670,7 @@
             }
         }
 
-        // タブ切替機能
+        // タブ切替機能（超高速レスポンス版）
         function switchTab(tabName) {
             const jclTab = document.getElementById('jcl-tab');
             const cTab = document.getElementById('c-tab');
@@ -1677,22 +1682,27 @@
                 cTab.classList.remove('active');
                 jclEditor.style.display = 'block';
                 cEditor.style.display = 'none';
+                currentTab = 'jcl';
             } else {
                 jclTab.classList.remove('active');
                 cTab.classList.add('active');
                 jclEditor.style.display = 'none';
                 cEditor.style.display = 'block';
+                currentTab = 'c';
             }
             
-            // Monaco Editorのレイアウト更新
-            setTimeout(() => {
+            // Monaco Editorのレイアウト更新（即座実行）
+            requestAnimationFrame(() => {
                 if (window.jclEditor && tabName === 'jcl') {
                     window.jclEditor.layout();
+                    console.log('JCL Editor タブ切り替え後レイアウト更新');
                 }
                 if (window.cEditor && tabName === 'c') {
                     window.cEditor.layout();
+                    console.log('C Editor タブ切り替え後レイアウト更新');
                 }
-            }, 100);
+            });
+        }
         }
         
         // JCL→C変換機能
