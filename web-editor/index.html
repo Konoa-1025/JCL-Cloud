@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>JCL Cloud - v2.6.8 | プロフェッショナルJCL開発環境</title>
+    <title>JCL Cloud - v2.6.9 | プロフェッショナルJCL開発環境</title>
     <style>
         * {
             margin: 0;
@@ -434,22 +434,20 @@
         }
         
         .editor-wrapper {
-            flex: 1;
+            flex: 0 0 auto; /* 親flexの支配から自立 */
             border: 1px solid #e9ecef;
             resize: vertical;  /* 縦方向リサイズを優先 */
-            overflow: auto;  /* resizeを効かせるために必須 */
+            overflow: auto;  /* 必須！これがないと縦リサイズが効かない */
             min-height: 300px; /* 大きめの最小高さ */
             max-height: none;  /* 最大高さ制限撤廃 */
             position: relative;
-            background: #f8f9fa;  /* エディタ周りの背景色 */
-            /* 親子連動の最適化 */
-            height: 100%; /* 親に完全追従 */
-            /* 高速レスポンス用最適化 */
-            will-change: height;
-            contain: layout;
+            background: #f8f9fa;
+            /* ブロックの最小高拘束を解除 */
+            min-block-size: 0;
             /* アニメーション完全無効化 */
             transition: none !important;
-            transform: translateZ(0); /* GPU加速 */
+            /* レイアウトコンテインメント最適化 */
+            contain: layout;
         }
         
         .editor-wrapper .monaco-editor {
@@ -656,11 +654,11 @@
                 このサービスは認証されたユーザーのみがアクセス可能です。<br>
                 不正アクセスや攻撃を防ぐため、承認制となっています。
                 <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #bee5eb; font-size: 0.8em; color: #0c5460;">
-                    <strong>🚀 Version 2.6.8</strong> - エディタ縦リサイズ超高速レスポンス版<br>
+                    <strong>🚀 Version 2.6.9</strong> - Monaco Editor無限ループ修正・AI自動化機能追加版<br>
                     <div style="margin-top: 8px; font-size: 0.75em; line-height: 1.4;">
-                        ⚡ <strong>新機能:</strong> エディタリサイズ即座対応（10ms）、親子連動最適化、GPU加速<br>
-                        🔧 <strong>改善:</strong> will-change・contain最適化、デバウンス時間短縮、高頻度レイアウト更新<br>
-                        🎨 <strong>UI:</strong> リサイズハンドル高速化、親要素高さ追従、レスポンス性向上
+                        🔧 <strong>重要修正:</strong> automaticLayout無効化、ResizeObserver最適化、無限伸び防止<br>
+                        ✨ <strong>新機能:</strong> AI自動化ボタン、ChatGPT連携、自動プロンプト生成<br>
+                        ⚡ <strong>改善:</strong> flex: 0 0 auto設定、親子関係最適化、レイアウト安定化
                     </div>
                     <span style="font-size: 0.7em; color: #066882;">最終更新: 2025年8月26日</span>
                 </div>
@@ -773,14 +771,17 @@
                                 <input type="text" id="aiPrompt" class="ai-prompt-input" 
                                        placeholder="例：数値を2つ入力して足し算するプログラムを作って">
                                 <div class="ai-buttons">
-                                    <button onclick="generateCode()" class="ai-btn ai-btn-primary">
+                                    <button onclick="generateCodeAuto()" class="ai-btn ai-btn-primary">
                                         ✨ コード生成
                                     </button>
-                                    <button onclick="explainCode()" class="ai-btn ai-btn-secondary">
+                                    <button onclick="explainCodeAuto()" class="ai-btn ai-btn-secondary">
                                         💡 コード説明
                                     </button>
-                                    <button onclick="optimizeCode()" class="ai-btn ai-btn-secondary">
+                                    <button onclick="optimizeCodeAuto()" class="ai-btn ai-btn-secondary">
                                         ⚡ コード改善
+                                    </button>
+                                    <button onclick="openAIChatHelp()" class="ai-btn" style="background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%); color: white;">
+                                        🤖 ChatGPTで質問
                                     </button>
                                 </div>
                             </div>
@@ -1063,7 +1064,7 @@
                     roundedSelection: false,
                     scrollBeyondLastLine: false,
                     readOnly: false,
-                    automaticLayout: true
+                    automaticLayout: false // ResizeObserverと競合しないよう無効化
                 });
                 
                 // Cエディタ（読み取り専用）
@@ -1076,7 +1077,7 @@
                     roundedSelection: false,
                     scrollBeyondLastLine: false,
                     readOnly: true,
-                    automaticLayout: true
+                    automaticLayout: false // ResizeObserverと競合しないよう無効化
                 });
                 
                 // Ctrl+Enter で実行
@@ -1094,76 +1095,46 @@
                 // テーマボタンの表示を更新
                 updateThemeButton();
                 
-                // エディタのリサイズ監視を超高速化
+                // エディタのリサイズ監視を最適化（無限ループ防止版）
                 const jclEditorElement = document.getElementById('jcl-editor');
                 const cEditorElement = document.getElementById('c-editor');
                 
-                // 即座にレスポンシブResizeObserverでエディタコンテナのサイズ変更を監視
+                // 外枠のみを監視してResizeObserver無限ループを防止
                 if (window.ResizeObserver) {
-                    // デバウンス時間を短縮
+                    // 無限ループ防止のため、デバウンス処理
                     let resizeTimeout;
                     const resizeObserver = new ResizeObserver(entries => {
-                        // デバウンスをほぼゼロに
                         clearTimeout(resizeTimeout);
                         resizeTimeout = setTimeout(() => {
                             for (let entry of entries) {
                                 const { width, height } = entry.contentRect;
                                 
+                                // エディタ要素のサイズが変わった場合のみレイアウト更新
                                 if (entry.target === jclEditorElement && window.jclEditor && currentTab === 'jcl') {
-                                    console.log(`JCL Editor 即座リサイズ: ${width}x${height}`);
+                                    console.log(`JCL Editor 外枠リサイズ: ${width}x${height}`);
                                     window.jclEditor.layout({ width, height });
                                 }
                                 if (entry.target === cEditorElement && window.cEditor && currentTab === 'c') {
-                                    console.log(`C Editor 即座リサイズ: ${width}x${height}`);
+                                    console.log(`C Editor 外枠リサイズ: ${width}x${height}`);
                                     window.cEditor.layout({ width, height });
                                 }
                             }
-                        }, 10); // 10ms デバウンス（超高速）
+                        }, 50); // 50ms デバウンス
                     });
                     
+                    // 外枠のみを監視（内部のMonacoエディタは監視しない）
                     resizeObserver.observe(jclEditorElement);
                     resizeObserver.observe(cEditorElement);
                     
-                    // ウィンドウリサイズ時も即座に対応
+                    // ウィンドウリサイズ時もレイアウト更新
                     let windowResizeTimeout;
                     window.addEventListener('resize', () => {
                         clearTimeout(windowResizeTimeout);
                         windowResizeTimeout = setTimeout(() => {
                             if (window.jclEditor && currentTab === 'jcl') window.jclEditor.layout();
                             if (window.cEditor && currentTab === 'c') window.cEditor.layout();
-                        }, 5); // 5ms で即座対応
+                        }, 100);
                     });
-                    
-                    // MutationObserverで直接的なサイズ変更も超高速監視
-                    const mutationObserver = new MutationObserver(mutations => {
-                        mutations.forEach(mutation => {
-                            if (mutation.type === 'attributes' && mutation.attributeName === 'style') {
-                                const target = mutation.target;
-                                if ((target === jclEditorElement || target === cEditorElement) && 
-                                    (target.style.height || target.style.width)) {
-                                    
-                                    // 即座実行（デバウンスなし）
-                                    if (target === jclEditorElement && window.jclEditor && currentTab === 'jcl') {
-                                        console.log('JCL Editor style即座変更検出');
-                                        window.jclEditor.layout();
-                                    }
-                                    if (target === cEditorElement && window.cEditor && currentTab === 'c') {
-                                        console.log('C Editor style即座変更検出');
-                                        window.cEditor.layout();
-                                    }
-                                }
-                            }
-                        });
-                    });
-                    
-                    mutationObserver.observe(jclEditorElement, { attributes: true, attributeFilter: ['style'] });
-                    mutationObserver.observe(cEditorElement, { attributes: true, attributeFilter: ['style'] });
-                    
-                    // フォールバック：定期的なlayout実行は頻度を上げる
-                    setInterval(() => {
-                        if (window.jclEditor && currentTab === 'jcl') window.jclEditor.layout();
-                        if (window.cEditor && currentTab === 'c') window.cEditor.layout();
-                    }, 1000); // 1秒に1回（高頻度）
                 }
             });
             
@@ -1797,6 +1768,66 @@
                 toggleBtn.title = 'メールアドレスを隠す';
                 emailVisible = true;
             }
+        }
+        
+        // AI機能の自動化版（自動でプロンプト設定・送信）
+        function generateCodeAuto() {
+            const prompt = document.getElementById('aiPrompt').value.trim();
+            if (!prompt) {
+                document.getElementById('aiPrompt').value = 'JCLでHello Worldプログラムを作ってください';
+            }
+            generateCode();
+        }
+        
+        function explainCodeAuto() {
+            const code = window.jclEditor ? window.jclEditor.getValue() : '';
+            if (!code.trim()) {
+                document.getElementById('aiOutput').innerHTML = '❌ 説明するコードがありません。まずコードを書いてください。';
+                return;
+            }
+            document.getElementById('aiPrompt').value = 'このJCLコードの動作を詳しく説明してください：\n\n' + code;
+            explainCode();
+        }
+        
+        function optimizeCodeAuto() {
+            const code = window.jclEditor ? window.jclEditor.getValue() : '';
+            if (!code.trim()) {
+                document.getElementById('aiOutput').innerHTML = '❌ 改善するコードがありません。まずコードを書いてください。';
+                return;
+            }
+            document.getElementById('aiPrompt').value = 'このJCLコードをより良く改善してください：\n\n' + code;
+            optimizeCode();
+        }
+        
+        // ChatGPTで質問する機能
+        function openAIChatHelp() {
+            const code = window.jclEditor ? window.jclEditor.getValue() : '';
+            const prompt = document.getElementById('aiPrompt').value.trim();
+            
+            let chatMessage = 'JCL（日本語C言語）について質問があります。\n\n';
+            
+            if (prompt) {
+                chatMessage += `質問: ${prompt}\n\n`;
+            }
+            
+            if (code.trim()) {
+                chatMessage += `参考コード:\n${code}\n\n`;
+            }
+            
+            chatMessage += 'JCLの文法や動作について教えてください。';
+            
+            // ChatGPTのURLを生成（クエリパラメータでメッセージを自動入力）
+            const encodedMessage = encodeURIComponent(chatMessage);
+            const chatGPTUrl = `https://chat.openai.com/?q=${encodedMessage}`;
+            
+            // 新しいタブでChatGPTを開く
+            window.open(chatGPTUrl, '_blank');
+            
+            // ユーザーに案内メッセージ
+            document.getElementById('aiOutput').innerHTML = 
+                `🤖 ChatGPTを新しいタブで開きました！\n\n` +
+                `📝 質問内容:\n${chatMessage}\n\n` +
+                `💡 ChatGPTでより詳しい回答が得られます。`;
         }
     </script>
         </div>  <!-- container終了 -->
