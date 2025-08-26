@@ -212,7 +212,12 @@ def ai_generate(req: AIRequest, current_user: str = Depends(verify_token)):
         
         print(f"🔑 Using OpenAI API key: {api_key[:10]}...")
         
-        client = OpenAI(api_key=api_key)
+        try:
+            client = OpenAI(api_key=api_key)
+            print("✅ OpenAI client created successfully")
+        except Exception as e:
+            print(f"❌ Failed to create OpenAI client: {str(e)}")
+            return {"ok": False, "error": f"OpenAI client creation failed: {str(e)}"}
         
         system_prompt = """あなたはJCL（Japanese Coding Language）のエキスパートです。
 JCLの文法規則:
@@ -228,15 +233,20 @@ JCLの文法規則:
 
         print("📡 Sending request to OpenAI API...")
         
-        response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": req.prompt}
-            ],
-            max_tokens=500,
-            temperature=0.7
-        )
+        try:
+            response = client.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": req.prompt}
+                ],
+                max_tokens=500,
+                temperature=0.7
+            )
+            print("✅ OpenAI API call successful")
+        except Exception as e:
+            print(f"❌ OpenAI API call failed: {str(e)}")
+            return {"ok": False, "error": f"OpenAI API call failed: {str(e)}"}
         
         generated_code = response.choices[0].message.content
         
