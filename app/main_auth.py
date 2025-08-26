@@ -421,55 +421,150 @@ async def transpile_jcl_to_c(request: CodeRequest, current_user: str = Depends(v
         return {"ok": False, "error": f"トランスパイルエラー: {str(e)}"}
 
 def convert_jcl_to_c(jcl_code: str) -> str:
-    """JCLコードをCコードに変換する関数"""
+    """JCLコードをCコードに変換する高度な関数"""
     try:
-        # JCLコードを解析して適切なCコードを生成
         lines = jcl_code.strip().split('\n')
-        c_code_lines = ["#include <stdio.h>", "", "int main() {"]
+        c_code_lines = ["#include <stdio.h>", "#include <string.h>", "", "int main() {"]
+        
+        # 変数宣言の格納
+        variables = {}
+        in_main_function = False
         
         for line in lines:
             line = line.strip()
             if not line or line.startswith('//'):
                 continue
-                
-            # 主関数の処理
+            
+            # 主関数の開始
             if line.startswith('主関数()'):
+                in_main_function = True
                 continue
-            elif line.startswith('戻る'):
-                # 戻る文をreturnに変換
-                if '0' in line:
-                    c_code_lines.append("    return 0;")
-                else:
-                    c_code_lines.append("    return 0;")
-            elif '表示(' in line:
-                # 表示文をprintfに変換
-                if 'Hello, World!改行' in line:
-                    c_code_lines.append('    printf("Hello, World!\\n");')
-                elif '"' in line:
-                    # 一般的な表示文の変換
-                    start = line.find('"')
-                    end = line.rfind('"')
-                    if start != -1 and end != -1 and start < end:
-                        text = line[start+1:end]
-                        if '改行' in text:
-                            text = text.replace('改行', '\\n')
-                        c_code_lines.append(f'    printf("{text}");')
-                    else:
-                        c_code_lines.append('    printf("Hello, World!\\n");')
-                else:
-                    c_code_lines.append('    printf("Hello, World!\\n");')
-            elif line.strip() == '}':
+            elif line == '}':
                 continue
+            
+            if in_main_function:
+                # 変数宣言の処理
+                if '整数型' in line:
+                    # 整数型 n = 1,gk,m,s,g,gh,h; のような宣言を処理
+                    var_part = line.replace('整数型', '').strip()
+                    if var_part.endswith(';'):
+                        var_part = var_part[:-1]
+                    
+                    # 複数の変数宣言を分離
+                    var_declarations = [v.strip() for v in var_part.split(',')]
+                    c_vars = []
+                    
+                    for var_decl in var_declarations:
+                        if '=' in var_decl:
+                            var_name, value = var_decl.split('=', 1)
+                            var_name = var_name.strip()
+                            value = value.strip()
+                            variables[var_name] = 'int'
+                            c_vars.append(f"{var_name} = {value}")
+                        else:
+                            var_name = var_decl.strip()
+                            variables[var_name] = 'int'
+                            c_vars.append(var_name)
+                    
+                    c_code_lines.append(f"    int {', '.join(c_vars)};")
                 
+                elif '文字型' in line:
+                    # 文字型 text[99]; のような宣言を処理
+                    var_part = line.replace('文字型', '').strip()
+                    if var_part.endswith(';'):
+                        var_part = var_part[:-1]
+                    c_code_lines.append(f"    char {var_part};")
+                
+                elif '出力(' in line:
+                    # 出力文の変換
+                    content = line[line.find('(')+1:line.rfind(')')]
+                    
+                    if '"' in content:
+                        # 文字列リテラルがある場合
+                        if content.count(',') > 0:
+                            # 複数の引数がある場合
+                            parts = [p.strip() for p in content.split(',')]
+                            format_str = parts[0].strip('"')
+                            args = parts[1:]
+                            
+                            # JCLの特殊文字を変換
+                            format_str = format_str.replace('改行', '\\n')
+                            
+                            # 整数や文字列の置換
+                            c_format = format_str
+                            arg_list = []
+                            
+                            for i, arg in enumerate(args):
+                                if arg in variables:
+                                    if '整数' in c_format:
+                                        c_format = c_format.replace('整数', '%d', 1)
+                                        arg_list.append(arg)
+                                    elif '文字列' in c_format:
+                                        c_format = c_format.replace('文字列', '%s', 1)
+                                        arg_list.append(arg)
+                            
+                            if arg_list:
+                                c_code_lines.append(f'    printf("{c_format}", {", ".join(arg_list)});')
+                            else:
+                                c_code_lines.append(f'    printf("{c_format}");')
+                        else:
+                            # 単純な文字列出力
+                            text = content.strip('"')
+                            text = text.replace('改行', '\\n')
+                            c_code_lines.append(f'    printf("{text}");')
+                    else:
+                        # 文字列リテラルがない場合
+                        c_code_lines.append(f'    printf("{content}");')
+                
+                elif '入力(' in line:
+                    # 入力文の変換
+                    content = line[line.find('(')+1:line.rfind(')')]
+                    parts = [p.strip() for p in content.split(',')]
+                    
+                    if len(parts) >= 2:
+                        input_type = parts[0].strip('"')
+                        var_name = parts[1].strip('&')
+                        
+                        if input_type == '整数':
+                            c_code_lines.append(f'    scanf("%d", &{var_name});')
+                        elif input_type == '文字列':
+                            c_code_lines.append(f'    scanf("%s", {var_name});')
+                        elif input_type == '文字':
+                            c_code_lines.append(f'    scanf(" %c", &{var_name});')
+                
+                elif line.startswith('戻る'):
+                    # return文の変換
+                    if '0' in line:
+                        c_code_lines.append("    return 0;")
+                    else:
+                        c_code_lines.append("    return 0;")
+                
+                else:
+                    # その他の処理（代入文など）
+                    if '=' in line and not '==' in line:
+                        # 代入文の変換
+                        c_line = line
+                        if c_line.endswith(';'):
+                            c_code_lines.append(f"    {c_line}")
+                        else:
+                            c_code_lines.append(f"    {c_line};")
+        
         c_code_lines.append("}")
         
         return '\n'.join(c_code_lines)
         
     except Exception as e:
-        # フォールバック: シンプルなHello Worldプログラム
-        return """#include <stdio.h>
+        # エラー時のフォールバック
+        return f"""#include <stdio.h>
+#include <string.h>
 
-int main() {
-    printf("Hello, World!\\n");
+int main() {{
+    // JCL変換エラー: {str(e)}
+    // 元のJCLコード:
+    /*
+{jcl_code}
+    */
+    
+    printf("JCLコードの変換でエラーが発生しました\\n");
     return 0;
-}"""
+}}"""
