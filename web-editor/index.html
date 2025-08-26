@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>JCL Cloud - v2.6.5 | プロフェッショナルJCL開発環境</title>
+        <title>JCL Cloud - v2.6.6 | プロフェッショナルJCL開発環境</title>
     <style>
         * {
             margin: 0;
@@ -159,14 +159,31 @@
             display: flex;
             flex-direction: column;
             gap: 20px;
-            height: calc(100vh - 200px);
             min-height: 600px;
+            max-height: none;  /* 高さ制限を削除 */
+            flex: 1;  /* 親コンテナに合わせて拡張 */
         }
 
         .main-editor-area {
             flex: 1;
             display: flex;
             gap: 20px;
+        }
+
+        .left-panel {
+            flex: 2;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            min-height: 0;  /* flexbox縮小を許可 */
+        }
+
+        .right-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            min-height: 0;  /* flexbox縮小を許可 */
         }
 
         .editor-section {
@@ -234,6 +251,8 @@
             display: flex;
             flex-direction: column;
             min-height: 300px;
+            resize: vertical;  /* 親コンテナも縦方向リサイズ可能 */
+            overflow-y: auto;  /* 縦方向リサイズに必要 */
         }
 
         .ai-container {
@@ -413,9 +432,10 @@
             flex: 1;
             border: 1px solid #e9ecef;
             transition: all 0.3s ease;
-            resize: both;  /* 縦横両方向にリサイズ可能 */
+            resize: vertical;  /* 縦方向リサイズを優先 */
             overflow: auto;  /* resizeを効かせるために必須 */
             min-height: 200px;
+            max-height: 800px;  /* 最大高さ制限 */
             min-width: 200px;  /* 最小幅も設定 */
             position: relative;
             background: #f8f9fa;  /* エディタ周りの背景色 */
@@ -628,11 +648,11 @@
                 このサービスは認証されたユーザーのみがアクセス可能です。<br>
                 不正アクセスや攻撃を防ぐため、承認制となっています。
                 <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #bee5eb; font-size: 0.8em; color: #0c5460;">
-                    <strong>🚀 Version 2.6.5</strong> - OpenAI API制限対応・包括的エラーハンドリング強化版<br>
+                    <strong>🚀 Version 2.6.6</strong> - 縦方向リサイズ対応・レイアウト最適化版<br>
                     <div style="margin-top: 8px; font-size: 0.75em; line-height: 1.4;">
-                        ✨ <strong>新機能:</strong> OpenAI 429エラー完全対応、詳細なユーザーガイダンス提供<br>
-                        🔧 <strong>改善:</strong> API制限検出強化（quota, rate_limit, 429対応）、手動代替案提示<br>
-                        🎨 <strong>UI:</strong> エラーメッセージ統一、解決方法明示、親切なガイダンス追加
+                        ✨ <strong>新機能:</strong> エディタ縦方向リサイズ優先対応、親コンテナ連動リサイズ<br>
+                        🔧 <strong>改善:</strong> レイアウト構造最適化、OpenAI APIエラーメッセージ詳細化<br>
+                        🎨 <strong>UI:</strong> flexboxレイアウト改善、縦リサイズ優先設計、高さ制限撤廃
                     </div>
                     <span style="font-size: 0.7em; color: #066882;">最終更新: 2025年8月26日</span>
                 </div>
@@ -673,8 +693,9 @@
 
             <!-- 左右分割レイアウト -->
             <div class="split-container">
-                <!-- 左パネル: エディタとコード実行 -->
-                <div class="left-panel">
+                <div class="main-editor-area">
+                    <!-- 左パネル: エディタとコード実行 -->
+                    <div class="left-panel">
                     <div class="editor-container">
                         <div class="toolbar">
                             <div class="editor-tabs">
@@ -715,7 +736,7 @@
                         <div id="editorTips" style="background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%); padding: 8px 15px; font-size: 0.85em; color: #1565c0; border-radius: 0 0 15px 15px; display: flex; align-items: center; gap: 8px; justify-content: space-between;">
                             <div style="display: flex; align-items: center; gap: 8px;">
                                 <span style="font-size: 1.2em;">💡</span>
-                                <strong>TIP:</strong> コードエディタの右下隅をドラッグしてサイズ調節できます
+                                <strong>TIP:</strong> エディタの右下隅をドラッグして縦方向にサイズ調節できます（縦リサイズ優先）
                             </div>
                             <button onclick="hideTips()" style="background: none; border: none; color: #1565c0; cursor: pointer; font-size: 1.2em; padding: 2px; line-height: 1;" title="非表示にする">❌</button>
                         </div>
@@ -782,9 +803,11 @@
                         <button class="sample-btn" onclick="loadSample('money')" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; padding: 10px 16px; margin: 6px 4px; border-radius: 25px; cursor: pointer; transition: all 0.3s ease; font-weight: 500; font-size: 14px; box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);">💰 お金計算</button>
                     </div>
                 </div>
-            </div>
-        </div>
-    </div>
+                </div> <!-- right-panel終了 -->
+                </div> <!-- main-editor-area終了 -->
+            </div> <!-- split-container終了 -->
+        </div> <!-- container終了 -->
+    </div> <!-- mainScreen終了 -->
 
     <!-- Monaco Editor -->
     <script src="https://unpkg.com/monaco-editor@0.45.0/min/vs/loader.js"></script>
@@ -1375,7 +1398,7 @@
                         console.error('AI Optimize Error:', errorMsg);
                         
                         if (errorMsg.includes('insufficient_quota') || errorMsg.includes('quota') || errorMsg.includes('rate_limit') || errorMsg.includes('429')) {
-                            aiOutput.innerHTML = `⚠️ OpenAI APIの使用量制限に達しています。\n\n💡 解決方法：\n• OpenAIのダッシュボードで課金設定を確認\n• API使用量をチェック\n• しばらく時間をおいて再試行\n\n✨ 手動でのコード改善アドバイス：\n• 変数名をわかりやすく（例：data, count, sum）\n• 適切なコメントを追加\n• 処理を関数に分割`;
+                            aiOutput.innerHTML = `⚠️ OpenAI APIの使用量制限に達しています。\n\n💡 解決方法：\n• OpenAIのダッシュボードで課金設定を確認\n• API使用量制限を解除するため追加課金\n• しばらく時間をおいて再試行\n\n✨ 手動でのコード改善アドバイス：\n• 変数名をわかりやすく（例：data, count, sum）\n• 適切なコメントを追加\n• 処理を関数に分割\n• 無駄な処理を削除`;
                         } else {
                             aiOutput.innerHTML = `❌ エラー: ${errorMsg}\n\n💡 手動アドバイス：変数名をわかりやすくしたり、コメントを追加することをお勧めします！`;
                         }
