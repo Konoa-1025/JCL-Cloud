@@ -413,6 +413,9 @@
             flex: 1;
             border: 1px solid #e9ecef;
             transition: all 0.3s ease;
+            resize: vertical;
+            overflow: auto;
+            min-height: 200px;
         }
         
         /* テーマ切替ボタンのスタイル */
@@ -649,9 +652,12 @@
                     </a>
                 </div>
                 <p>日本語でプログラミングしよう！ブラウザでJCLコードを実行できます</p>
-                <div style="margin-top: 15px; background: rgba(255,255,255,0.2); padding: 10px; border-radius: 10px; font-size: 0.9em;">
-                    👤 ログイン中: <span id="userEmail" style="font-weight: bold;">確認中...</span>
-                    <button onclick="logout()" style="float: right; background: #dc3545; color: white; border: none; padding: 5px 15px; border-radius: 5px; cursor: pointer; font-size: 0.8em;">🚪 ログアウト</button>
+                <div style="margin-top: 15px; background: rgba(255,255,255,0.2); padding: 10px; border-radius: 10px; font-size: 0.9em; display: flex; align-items: center; justify-content: space-between;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        👤 ログイン中: <span id="userEmail" style="font-weight: bold;">確認中...</span>
+                        <button onclick="toggleEmailVisibility()" id="emailToggleBtn" style="background: none; border: none; color: white; cursor: pointer; font-size: 1.1em; padding: 2px;" title="メールアドレスを隠す/表示">👁️</button>
+                    </div>
+                    <button onclick="logout()" style="background: #dc3545; color: white; border: none; padding: 5px 15px; border-radius: 5px; cursor: pointer; font-size: 0.8em;">🚪 ログアウト</button>
                 </div>
             </div>
 
@@ -696,9 +702,12 @@
                         <div class="editor-wrapper" id="c-editor" style="height: 400px; min-height: 300px; resize: vertical; overflow: auto; display: none;"></div>
                         
                         <!-- エディタTIP表示 -->
-                        <div style="background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%); padding: 8px 15px; font-size: 0.85em; color: #1565c0; border-radius: 0 0 15px 15px; display: flex; align-items: center; gap: 8px;">
-                            <span style="font-size: 1.2em;">💡</span>
-                            <strong>TIP:</strong> コードエディタの右下隅をドラッグしてサイズ調節できます
+                        <div id="editorTips" style="background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%); padding: 8px 15px; font-size: 0.85em; color: #1565c0; border-radius: 0 0 15px 15px; display: flex; align-items: center; gap: 8px; justify-content: space-between;">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <span style="font-size: 1.2em;">💡</span>
+                                <strong>TIP:</strong> コードエディタの右下隅をドラッグしてサイズ調節できます
+                            </div>
+                            <button onclick="hideTips()" style="background: none; border: none; color: #1565c0; cursor: pointer; font-size: 1.2em; padding: 2px; line-height: 1;" title="非表示にする">❌</button>
                         </div>
                     </div>
                     
@@ -843,10 +852,16 @@
             document.getElementById('mainScreen').classList.remove('hidden');
             document.getElementById('userEmail').textContent = userInfo;
             
+            // メールアドレス表示設定の初期化
+            originalEmail = userInfo;
+            
             // エディタを初期化（まだ初期化されていない場合）
             if (!window.jclEditor) {
                 initializeEditor();
             }
+            
+            // Tips表示設定を読み込み
+            setTimeout(loadTipsSettings, 100);
         }
         
         // ログインフォーム設定
@@ -1136,18 +1151,22 @@
                         setTimeout(transpileToC, 500);
                     } else {
                         const errorMsg = result.error || '生成に失敗しました';
-                        if (errorMsg.includes('insufficient_quota')) {
+                        if (errorMsg.includes('insufficient_quota') || errorMsg.includes('quota')) {
                             aiOutput.innerHTML = `⚠️ OpenAI APIの使用量制限に達しています。\n\n🔧 解決方法：\n• OpenAI APIキーの使用量制限を確認\n• 別のAPIキーを使用\n• しばらく時間をおいて再試行\n\n💡 現在はサンプルコードをご活用ください！`;
                         } else {
-                            aiOutput.innerHTML = `❌ エラー: ${errorMsg}`;
+                            aiOutput.innerHTML = `❌ エラー: ${errorMsg}\n\n💡 サンプルコードをお試しください。`;
                         }
                     }
+                } else if (response.status === 401) {
+                    aiOutput.innerHTML = `🔒 認証が必要です。再ログインしてください。`;
+                    setTimeout(() => logout(), 2000);
                 } else {
                     const error = await response.json();
-                    aiOutput.innerHTML = `❌ エラー: ${error.error || 'AI機能の呼び出しに失敗しました'}`;
+                    const errorMsg = error.error || error.detail || 'AI機能の呼び出しに失敗しました';
+                    aiOutput.innerHTML = `❌ エラー: ${errorMsg}\n\n💡 現在はサンプルコードをご活用ください！`;
                 }
             } catch (error) {
-                aiOutput.innerHTML = `❌ 通信エラー: ${error.message}\n\n🔄 インターネット接続を確認して再試行してください。`;
+                aiOutput.innerHTML = `❌ 通信エラー: ${error.message}\n\n🔄 インターネット接続を確認して再試行してください。\n💡 現在はサンプルコードをご活用ください！`;
             }
         }
         
@@ -1181,18 +1200,22 @@
                         aiOutput.innerHTML = `💡 コード解説:\n\n${result.explanation}`;
                     } else {
                         const errorMsg = result.error || '説明の生成に失敗しました';
-                        if (errorMsg.includes('insufficient_quota')) {
+                        if (errorMsg.includes('insufficient_quota') || errorMsg.includes('quota')) {
                             aiOutput.innerHTML = `⚠️ OpenAI APIの使用量制限に達しています。\n\n💡 手動での解説：\nこのコードは主関数()から始まるJCLプログラムです。\n実行して動作を確認してみてください！`;
                         } else {
-                            aiOutput.innerHTML = `❌ エラー: ${errorMsg}`;
+                            aiOutput.innerHTML = `❌ エラー: ${errorMsg}\n\n💡 手動解説：このコードを実行して動作を確認してみてください！`;
                         }
                     }
+                } else if (response.status === 401) {
+                    aiOutput.innerHTML = `🔒 認証が必要です。再ログインしてください。`;
+                    setTimeout(() => logout(), 2000);
                 } else {
                     const error = await response.json();
-                    aiOutput.innerHTML = `❌ エラー: ${error.error || 'AI機能の呼び出しに失敗しました'}`;
+                    const errorMsg = error.error || error.detail || 'AI機能の呼び出しに失敗しました';
+                    aiOutput.innerHTML = `❌ エラー: ${errorMsg}\n\n💡 代替手段：実行して動作を確認してみてください！`;
                 }
             } catch (error) {
-                aiOutput.innerHTML = `❌ 通信エラー: ${error.message}`;
+                aiOutput.innerHTML = `❌ 通信エラー: ${error.message}\n\n💡 手動解説：コードを実行して動作を確認してみてください！`;
             }
         }
         
@@ -1226,18 +1249,22 @@
                         aiOutput.innerHTML = `⚡ コード改善提案:\n\n${result.optimization}`;
                     } else {
                         const errorMsg = result.error || '改善提案の生成に失敗しました';
-                        if (errorMsg.includes('insufficient_quota')) {
+                        if (errorMsg.includes('insufficient_quota') || errorMsg.includes('quota')) {
                             aiOutput.innerHTML = `⚠️ OpenAI APIの使用量制限に達しています。\n\n💡 手動でのアドバイス：\n• 変数名をわかりやすくする\n• コメントを追加する\n• 処理を関数に分ける\nなど試してみてください！`;
                         } else {
-                            aiOutput.innerHTML = `❌ エラー: ${errorMsg}`;
+                            aiOutput.innerHTML = `❌ エラー: ${errorMsg}\n\n💡 手動アドバイス：変数名をわかりやすくしたり、コメントを追加することをお勧めします！`;
                         }
                     }
+                } else if (response.status === 401) {
+                    aiOutput.innerHTML = `🔒 認証が必要です。再ログインしてください。`;
+                    setTimeout(() => logout(), 2000);
                 } else {
                     const error = await response.json();
-                    aiOutput.innerHTML = `❌ エラー: ${error.error || 'AI機能の呼び出しに失敗しました'}`;
+                    const errorMsg = error.error || error.detail || 'AI機能の呼び出しに失敗しました';
+                    aiOutput.innerHTML = `❌ エラー: ${errorMsg}\n\n💡 手動アドバイス：コードに適切なコメントや変数名を追加してみてください！`;
                 }
             } catch (error) {
-                aiOutput.innerHTML = `❌ 通信エラー: ${error.message}`;
+                aiOutput.innerHTML = `❌ 通信エラー: ${error.message}\n\n💡 手動アドバイス：より読みやすいコードを心がけてみてください！`;
             }
         }
         
@@ -1502,7 +1529,7 @@
             const jclCode = window.jclEditor.getValue();
             if (!jclCode.trim()) {
                 if (window.cEditor) {
-                    window.cEditor.setValue('// JCLコードを入力すると、ここにC言語変換結果が表示されます');
+                    window.cEditor.setValue('// JCLコードを入力すると、ここにC言語変換結果が表示されます\n// 「実行する」ボタンを押すと自動的に変換されます');
                 }
                 return;
             }
@@ -1526,6 +1553,11 @@
                     const data = await response.json();
                     if (window.cEditor && data.transpiled_code) {
                         window.cEditor.setValue(data.transpiled_code);
+                    } else if (window.cEditor && data.c_code) {
+                        // バックエンドの別の応答形式に対応
+                        window.cEditor.setValue(data.c_code);
+                    } else if (window.cEditor) {
+                        window.cEditor.setValue(`// 変換結果が見つかりませんでした\n// レスポンス: ${JSON.stringify(data, null, 2)}\n\n// 元のJCLコード:\n/*\n${jclCode}\n*/`);
                     }
                 } else {
                     console.error('トランスパイルエラー:', response.statusText);
@@ -1538,6 +1570,50 @@
                 if (window.cEditor) {
                     window.cEditor.setValue(`// 変換処理でエラーが発生しました\n// エラー詳細: ${error.message}\n\n// 元のJCLコード:\n/*\n${jclCode}\n*/`);
                 }
+            }
+        }
+        
+        // Tips非表示機能
+        function hideTips() {
+            const tipsElement = document.getElementById('editorTips');
+            if (tipsElement) {
+                tipsElement.style.display = 'none';
+                localStorage.setItem('jcl_tips_hidden', 'true');
+            }
+        }
+        
+        // 保存されたTips表示設定を読み込み
+        function loadTipsSettings() {
+            const tipsHidden = localStorage.getItem('jcl_tips_hidden');
+            if (tipsHidden === 'true') {
+                const tipsElement = document.getElementById('editorTips');
+                if (tipsElement) {
+                    tipsElement.style.display = 'none';
+                }
+            }
+        }
+        
+        // メールアドレス表示/非表示切り替え
+        let emailVisible = true;
+        let originalEmail = '';
+        
+        function toggleEmailVisibility() {
+            const emailElement = document.getElementById('userEmail');
+            const toggleBtn = document.getElementById('emailToggleBtn');
+            
+            if (emailVisible) {
+                // メールアドレスを隠す
+                originalEmail = emailElement.textContent;
+                emailElement.textContent = '●●●●●●●●●●';
+                toggleBtn.innerHTML = '🙈';
+                toggleBtn.title = 'メールアドレスを表示';
+                emailVisible = false;
+            } else {
+                // メールアドレスを表示
+                emailElement.textContent = originalEmail;
+                toggleBtn.innerHTML = '👁️';
+                toggleBtn.title = 'メールアドレスを隠す';
+                emailVisible = true;
             }
         }
     </script>
